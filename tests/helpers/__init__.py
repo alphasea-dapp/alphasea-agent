@@ -41,7 +41,7 @@ def proceed_time(w3, timestamp):
 
 def get_future_execution_start_at_timestamp():
     future_midnight = 2000073600
-    return future_midnight
+    return future_midnight + 60 * 60
 
 
 def get_prediction_time_shift():

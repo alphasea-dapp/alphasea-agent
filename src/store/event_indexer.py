@@ -1,8 +1,10 @@
-
 from collections import defaultdict
 import pandas as pd
+from .utils import convert_keys_to_snake_case
+
 
 # thegraphのようなことをする
+# インターフェースはsnakecase
 
 class EventIndexer:
     def __init__(self, w3, contract):
@@ -10,6 +12,7 @@ class EventIndexer:
         self._contract = contract
 
         self._event_names = [
+            'TournamentCreated',
             'ModelCreated',
             'PredictionCreated',
             'PredictionPublished',
@@ -17,77 +20,78 @@ class EventIndexer:
             'PurchaseShipped',
         ]
 
-        self._events = defaultdict(list)
-        self._last_blocks = defaultdict(int)
+        self._last_block_number = 0
 
-        self._models = pd.DataFrame()
-        self._predictions = pd.DataFrame()
-        self._purchases = pd.DataFrame()
+        # pandasの仕様
+        # ここで追加したカラムはappendで整数を追加したときにobjectになる
+        # 追加しないとfloatになる
 
-    def fetch_models(self, model_id: str=None, tournament_id: str=None, owner: str=None):
+        self._tournaments = pd.DataFrame(columns=[
+            'tournament_id',
+            'description',
+            'execution_preparation_time',
+            'execution_start_at',
+            'execution_time',
+            'prediction_time',
+            'publication_time',
+            'purchase_time',
+            'shipping_time'
+        ])
+        self._models = pd.DataFrame(columns=['model_id', 'tournament_id', 'owner'])
+        self._predictions = pd.DataFrame(columns=['model_id', 'execution_start_at', 'price'])
+        self._purchases = pd.DataFrame(columns=['model_id', 'execution_start_at', 'purchaser'])
+
+    def fetch_tournaments(self, tournament_id: str = None):
         self._fetch_events()
 
-        if self._models.shape[0] == 0:
-            return self._models
+        return _filter_df(self._tournaments, [
+            ('tournament_id', tournament_id)
+        ])
 
-        idx = self._models['modelId'] == self._models['modelId']
-        if model_id is not None:
-            idx &= self._models['modelId'] == model_id
-        if tournament_id is not None:
-            idx &= self._models['tournamentId'] == tournament_id
-        if owner is not None:
-            idx &= self._models['owner'] == owner
-        return self._models.loc[idx]
-
-    def fetch_predictions(self, model_id: str=None, execution_start_at: int=None):
+    def fetch_models(self, model_id: str = None, tournament_id: str = None, owner: str = None):
         self._fetch_events()
 
-        if self._predictions.shape[0] == 0:
-            return self._predictions
+        return _filter_df(self._models, [
+            ('model_id', model_id),
+            ('tournament_id', tournament_id),
+            ('owner', owner),
+        ])
 
-        idx = self._predictions['modelId'] == self._predictions['modelId']
-        if model_id is not None:
-            idx &= self._predictions['modelId'] == model_id
-        if execution_start_at is not None:
-            idx &= self._predictions['executionStartAt'] == execution_start_at
-        return self._predictions.loc[idx]
-
-    def fetch_purchases(self, model_id: str=None, execution_start_at: int=None, purchaser: str=None):
+    def fetch_predictions(self, model_id: str = None, execution_start_at: int = None):
         self._fetch_events()
 
-        if self._purchases.shape[0] == 0:
-            return self._purchases
+        return _filter_df(self._predictions, [
+            ('model_id', model_id),
+            ('execution_start_at', execution_start_at),
+        ])
 
-        idx = self._purchases['modelId'] == self._purchases['modelId']
-        if model_id is not None:
-            idx &= self._purchases['modelId'] == model_id
-        if execution_start_at is not None:
-            idx &= self._purchases['executionStartAt'] == execution_start_at
-        if purchaser is not None:
-            idx &= self._purchases['purchaser'] == purchaser
-        return self._purchases.loc[idx]
+    def fetch_purchases(self, model_id: str = None, execution_start_at: int = None, purchaser: str = None):
+        self._fetch_events()
 
+        return _filter_df(self._purchases, [
+            ('model_id', model_id),
+            ('execution_start_at', execution_start_at),
+            ('purchaser', purchaser),
+        ])
 
     def _fetch_events(self):
         events = []
 
+        to_block = self._w3.eth.block_number
+        if to_block <= self._last_block_number:
+            return
+
         for event_name in self._event_names:
-            to_block = self._w3.eth.block_number
-            if to_block <= self._last_blocks[event_name]:
-                continue
-
-            # print(event_name, self._last_blocks[event_name])
-
             events += getattr(self._contract.events, event_name).getLogs(
-                fromBlock=self._last_blocks[event_name] + 1,
+                fromBlock=self._last_block_number + 1,
                 # fromBlock=1,
                 toBlock=to_block,
                 argument_filters={
-                    'executionStartAt': 1,
+                    'execution_start_at': 1,
                 },
             )
 
-            self._last_blocks[event_name] = to_block
+        self._last_block_number = to_block
 
         # print(events)
 
@@ -98,43 +102,41 @@ class EventIndexer:
 
     def _process_event(self, event):
         event_name = event['event']
-        args = event['args']
+        args = convert_keys_to_snake_case(event['args'])
 
-        if event_name == 'ModelCreated':
+        if event_name == 'TournamentCreated':
+            self._tournaments = self._tournaments.append(
+                args,
+                ignore_index=True,
+            )
+        elif event_name == 'ModelCreated':
             self._models = self._models.append(
-                {
-                    'modelId': args['modelId'],
-                    'tournamentId': args['tournamentId'],
-                    'owner': args['owner'],
-                },
+                args,
                 ignore_index=True,
             )
         elif event_name == 'PredictionCreated':
             self._predictions = self._predictions.append(
-                {
-                    'modelId': args['modelId'],
-                    'executionStartAt': args['executionStartAt'],
-                    'price': str(args['price']),
-                    'encryptedContent': args['encryptedContent'],
-                },
+                args,
                 ignore_index=True,
             )
         elif event_name == 'PredictionPublished':
-            idx = self._predictions['modelId'] == args['modelId']
-            idx &= self._predictions['executionStartAt'] == args['executionStartAt']
-            self._predictions.loc[idx, 'contentKey'] = args['contentKey']
+            idx = self._predictions['model_id'] == args['model_id']
+            idx &= self._predictions['execution_start_at'] == args['execution_start_at']
+            self._predictions.loc[idx, 'content_key'] = args['content_key']
         elif event_name == 'PurchaseCreated':
             self._purchases = self._purchases.append(
-                {
-                    'modelId': args['modelId'],
-                    'executionStartAt': args['executionStartAt'],
-                    'purchaser': args['purchaser'],
-                    'publicKey': args['publicKey'],
-                },
+                args,
                 ignore_index=True,
             )
         elif event_name == 'PurchaseShipped':
-            idx = self._purchases['modelId'] == args['modelId']
-            idx &= self._purchases['executionStartAt'] == args['executionStartAt']
+            idx = self._purchases['model_id'] == args['model_id']
+            idx &= self._purchases['execution_start_at'] == args['execution_start_at']
             idx &= self._purchases['purchaser'] == args['purchaser']
-            self._purchases.loc[idx, 'encryptedContentKey'] = args['encryptedContentKey']
+            self._purchases.loc[idx, 'encrypted_content_key'] = args['encrypted_content_key']
+
+
+def _filter_df(df, conditions):
+    for name, value in conditions:
+        if value is not None:
+            return df.loc[df[name] == value]
+    return df

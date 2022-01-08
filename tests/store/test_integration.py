@@ -50,6 +50,7 @@ class TestStoreIntegration(BaseHardhatTestCase):
             execution_start_at=execution_start_at
         )
         self.assertEqual(result, [{
+            **result[0],
             'model_id': model_id,
             'price': 1,
             'content': None,
@@ -68,6 +69,7 @@ class TestStoreIntegration(BaseHardhatTestCase):
             execution_start_at=execution_start_at
         )
         self.assertEqual(result, [{
+            **result[0],
             'model_id': model_id,
             'execution_start_at': execution_start_at,
             'purchaser': w3_purchaser.eth.accounts[1],
@@ -87,6 +89,7 @@ class TestStoreIntegration(BaseHardhatTestCase):
             execution_start_at=execution_start_at
         )
         self.assertEqual(result, [{
+            **result[0],
             'model_id': model_id,
             'execution_start_at': execution_start_at,
             'purchaser': w3_purchaser.eth.accounts[1],
@@ -106,6 +109,7 @@ class TestStoreIntegration(BaseHardhatTestCase):
             execution_start_at=execution_start_at
         )
         self.assertEqual(result, [{
+            **result[0],
             'model_id': model_id,
             'price': 1,
             'content': content,
