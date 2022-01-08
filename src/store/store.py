@@ -2,6 +2,7 @@
 from web3 import Web3
 import threading
 from collections import defaultdict
+import pandas as pd
 from nacl.public import PublicKey, PrivateKey, SealedBox
 from nacl.secret import SecretBox
 import nacl.utils
@@ -27,23 +28,23 @@ class Store:
         with self._lock:
             return self._event_indexer.fetch_tournaments(tournament_id=tournament_id).iloc[0].to_dict()
 
-    def fetch_last_prediction(self, model_id: str, max_execution_start_at: int):
-        with self._lock:
-            predictions = self._event_indexer.fetch_predictions(model_id=model_id)
-            predictions = predictions[predictions['execution_start_at'] <= max_execution_start_at]
-            if predictions.shape[0] == 0:
-                return None
-            prediction = predictions.iloc[-1]
-
-            purchases = self._event_indexer.fetch_purchases(
-                model_id=prediction['model_id'],
-                execution_start_at=prediction['execution_start_at'],
-            )
-
-            return {
-                **prediction.to_dict(),
-                'purchase_count': purchases.shape[0],
-            }
+    # def fetch_last_prediction(self, model_id: str, max_execution_start_at: int):
+    #     with self._lock:
+    #         predictions = self._event_indexer.fetch_predictions(model_id=model_id)
+    #         predictions = predictions[predictions['execution_start_at'] <= max_execution_start_at]
+    #         if predictions.shape[0] == 0:
+    #             return None
+    #         prediction = predictions.iloc[-1]
+    #
+    #         purchases = self._event_indexer.fetch_purchases(
+    #             model_id=prediction['model_id'],
+    #             execution_start_at=prediction['execution_start_at'],
+    #         )
+    #
+    #         return {
+    #             **prediction.to_dict(),
+    #             'purchase_count': purchases.shape[0],
+    #         }
 
     def fetch_predictions(self, tournament_id: str, execution_start_at: int):
         with self._lock:
@@ -51,19 +52,15 @@ class Store:
             predictions = self._event_indexer.fetch_predictions(
                 execution_start_at=execution_start_at
             )
-            if models.shape[0] == 0:
-                return []
-            if predictions.shape[0] == 0:
-                return []
             predictions = predictions.loc[predictions['model_id'].isin(models['model_id'].unique())]
 
             results = []
             for idx, prediction in predictions.iterrows():
-                if 'content_key' in predictions.columns and prediction['content_key'] is not None:
+                if pd.isna(prediction['content_key']):
+                    content = None
+                else:
                     box = SecretBox(prediction['content_key'])
                     content = box.decrypt(prediction['encrypted_content'])
-                else:
-                    content = None
 
                 results.append({
                     **prediction.to_dict(),
@@ -81,13 +78,8 @@ class Store:
             predictions = self._event_indexer.fetch_predictions(
                 execution_start_at=execution_start_at
             )
-            if models.shape[0] == 0:
-                return []
-            if predictions.shape[0] == 0:
-                return []
             predictions = predictions.loc[predictions['model_id'].isin(models['model_id'].unique())]
-            if 'content_key' in predictions.columns:
-                predictions = predictions.loc[predictions['content_key'].isna()]
+            predictions = predictions.loc[predictions['content_key'].isna()]
 
             results = []
             for idx, prediction in predictions.iterrows():
@@ -99,14 +91,9 @@ class Store:
         with self._lock:
             my_models = self._event_indexer.fetch_models(
                 tournament_id=tournament_id, owner=self._w3.eth.default_account)
-            if my_models.shape[0] == 0:
-                return []
             purchases = self._event_indexer.fetch_purchases(execution_start_at=execution_start_at)
-            if purchases.shape[0] == 0:
-                return []
             purchases = purchases.loc[purchases['model_id'].isin(my_models['model_id'].unique())]
-            if 'encrypted_content_key' in purchases.columns:
-                purchases = purchases.loc[purchases['encrypted_content_key'].isna()]
+            purchases = purchases.loc[purchases['encrypted_content_key'].isna()]
 
             results = []
             for idx, purchase in purchases.iterrows():
@@ -120,11 +107,7 @@ class Store:
                 execution_start_at=execution_start_at,
                 purchaser=self._w3.eth.default_account,
             )
-            if purchases.shape[0] == 0:
-                return []
             purchases = purchases.loc[purchases['model_id'].isin(models['model_id'].unique())]
-            if 'encrypted_content_key' not in purchases.columns:
-                return []
             purchases = purchases.loc[~purchases['encrypted_content_key'].isna()]
 
             predictions = self._event_indexer.fetch_predictions(
@@ -234,7 +217,7 @@ class Store:
                 params_list2
             ).transact({ 'value': sum_price })
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
-            return { 'receipt': dict(receipt) }
+            return { 'receipt': dict(receipt), 'sum_price': sum_price }
 
     def ship_purchases(self, params_list):
         with self._lock:

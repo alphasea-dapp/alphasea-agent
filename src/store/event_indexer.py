@@ -38,8 +38,8 @@ class EventIndexer:
             'shipping_time'
         ])
         self._models = pd.DataFrame(columns=['model_id', 'tournament_id', 'owner'])
-        self._predictions = pd.DataFrame(columns=['model_id', 'execution_start_at', 'price'])
-        self._purchases = pd.DataFrame(columns=['model_id', 'execution_start_at', 'purchaser'])
+        self._predictions = pd.DataFrame(columns=['model_id', 'execution_start_at', 'price', 'content_key'])
+        self._purchases = pd.DataFrame(columns=['model_id', 'execution_start_at', 'purchaser', 'encrypted_content_key'])
 
     def fetch_tournaments(self, tournament_id: str = None):
         self._fetch_events()

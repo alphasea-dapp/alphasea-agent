@@ -63,12 +63,6 @@ BTC,non_number"""
         with self.assertRaisesRegex(ValidationError, 'contains non number'):
             validate_content(content)
 
-    def test_contains_non_number(self):
-        content = b"""symbol,position
-BTC,non_number"""
-        with self.assertRaisesRegex(ValidationError, 'contains non number'):
-            validate_content(content)
-
     def test_contains_inf(self):
         content = b"""symbol,position
 BTC,inf"""

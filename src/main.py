@@ -19,10 +19,10 @@ predictor = Predictor(store=store, tournament_id=default_tournament_id)
 
 app = FastAPI()
 
-@app.post("/submit_prediction")
-def submit_prediction(tournament_id: str, model_id: str, execution_start_at: int,
-                      prediction_license: str, content: str):
 
+@app.post("/submit_prediction")
+def post_submit_prediction(tournament_id: str, model_id: str, execution_start_at: int,
+                           prediction_license: str, content: str):
     return predictor.submit_prediction(
         tournament_id=tournament_id,
         model_id=model_id,
@@ -30,6 +30,7 @@ def submit_prediction(tournament_id: str, model_id: str, execution_start_at: int
         prediction_license=prediction_license,
         content=content,
     )
+
 
 @app.get("/blended_prediction")
 def get_blended_prediction(tournament_id: str, execution_start_at: int):

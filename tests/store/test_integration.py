@@ -19,12 +19,10 @@ class TestStoreIntegration(BaseHardhatTestCase):
         w3 = create_web3()
         contract = create_contract(w3)
         store = Store(w3, contract)
-        w3.eth.default_account = w3.eth.accounts[0]
 
-        w3_purchaser = create_web3()
+        w3_purchaser = create_web3(account_index=1)
         contract_purhcaser = create_contract(w3_purchaser)
         store_purchaser = Store(w3_purchaser, contract_purhcaser)
-        w3_purchaser.eth.default_account = w3_purchaser.eth.accounts[1]
 
         execution_start_at = get_future_execution_start_at_timestamp()
         content = 'abc'.encode()
@@ -97,6 +95,16 @@ class TestStoreIntegration(BaseHardhatTestCase):
         }])
 
         # publication
+        result = store.fetch_predictions_to_publish(
+            tournament_id=get_tournament_id(),
+            execution_start_at=execution_start_at,
+        )
+        self.assertEqual(result, [{
+            **result[0],
+            'model_id': model_id,
+            'execution_start_at': execution_start_at,
+        }])
+
         proceed_time(w3, execution_start_at + get_publication_time_shift())
         store.publish_predictions([dict(
             model_id=model_id,

@@ -14,12 +14,13 @@ class BaseHardhatTestCase(TestCase):
         w3.testing.revert(self._snapshot_idx)
 
 
-def create_web3():
+def create_web3(account_index=0):
     external_modules = {
         'hardhat': (HardhatModule,)
     }
     w3 = Web3(Web3.HTTPProvider(os.getenv('WEB3_PROVIDER_URI')))
     attach_modules(w3, external_modules)
+    w3.eth.default_account = w3.eth.accounts[account_index]
     return w3
 
 

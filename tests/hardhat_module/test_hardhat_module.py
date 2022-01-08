@@ -14,3 +14,8 @@ class TestHardhatModule(BaseHardhatTestCase):
     def test_mine(self):
         w3 = create_web3()
         w3.hardhat.mine()
+
+    def test_set_balance(self):
+        w3 = create_web3()
+        w3.hardhat.set_balance(w3.eth.default_account, 12345)
+        self.assertEqual(w3.eth.get_balance(w3.eth.default_account), 12345)

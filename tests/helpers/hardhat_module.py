@@ -14,8 +14,15 @@ class HardhatModule(Module):
     def mine(self):
         return self._evm_mine()
 
+    def set_balance(self, address, balance):
+        return self._hardhat_setBalance(address, hex(balance))
 
     _hardhat_reset = Method(RPCEndpoint("hardhat_reset"))
+
+    _hardhat_setBalance = Method(
+        RPCEndpoint("hardhat_setBalance"),
+        mungers=[default_root_munger],
+    )
 
     _evm_mine = Method(RPCEndpoint("evm_mine"))
 

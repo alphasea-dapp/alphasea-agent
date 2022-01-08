@@ -14,7 +14,7 @@ from ..helpers import (
 from src.store.store import Store
 
 
-class TestStoreTournament(BaseHardhatTestCase):
+class TestStoreFetchTournament(BaseHardhatTestCase):
     def test_fetch_tournament(self):
         w3 = create_web3()
         contract = create_contract(w3)

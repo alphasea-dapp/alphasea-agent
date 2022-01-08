@@ -1,5 +1,12 @@
 
 
+
+
+## API docs
+
+http://localhost:8070/docs
+http://localhost:8070/redoc
+
 ## Development
 
 ### abi
@@ -15,4 +22,6 @@ ALPHASEA_CONTRACT_ABIはalphaseaリポジトリでnpm run print_abiで取得し�
 hardhat nodeに依存するので、
 alphaseaリポジトリでnpx hardhat nodeを立ち上げてから実行。
 
-docker-compose -f docker-compose-dev.yml run --rm agent python -m unittest
+```bash
+docker-compose -f docker-compose-dev.yml run --rm agent bash scripts/test.sh
+```
