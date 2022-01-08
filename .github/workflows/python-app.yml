@@ -16,12 +16,23 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v2
+    - name: Use Node.js
+      uses: actions/setup-node@v1
       with:
-        python-version: "3.10"
+        node-version: 16.x
     - name: Run tests
       run: |
+        git clone https://github.com/alphasea-dapp/alphasea.git
+        cd alphasea
+        yarn install
+        npx hardhat compile
+        npx hardhat node &
+        npx hardhat run --network localhost scripts/deploy.js
+        cd ../
+
+        echo '    extra_hosts:' >> docker-compose-dev.yml
+        echo '      - "host.docker.internal:host-gateway"' >> docker-compose-dev.yml
+
         docker-compose -f docker-compose-dev.yml run --rm agent bash scripts/test.sh
     - name: Lint with flake8
       run: |
