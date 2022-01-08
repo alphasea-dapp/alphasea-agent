@@ -138,5 +138,5 @@ class EventIndexer:
 def _filter_df(df, conditions):
     for name, value in conditions:
         if value is not None:
-            return df.loc[df[name] == value]
+            df = df.loc[df[name] == value]
     return df
