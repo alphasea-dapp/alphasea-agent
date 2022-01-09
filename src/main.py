@@ -23,6 +23,7 @@ app = FastAPI()
 @app.post("/submit_prediction")
 def post_submit_prediction(tournament_id: str, model_id: str, execution_start_at: int,
                            prediction_license: str, content: str):
+
     return predictor.submit_prediction(
         tournament_id=tournament_id,
         model_id=model_id,

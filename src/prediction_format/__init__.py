@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 
 
-
 class ValidationError(Exception):
     pass
 
@@ -70,6 +69,7 @@ def validate_content(content):
         raise ValidationError('position contains inf')
     if float_position.abs().sum() > 1:
         raise ValidationError('sum of abs(position) must be in [-1, 1]')
+
 
 def validate_symbol(s: str):
     if not re.match(r'^[a-zA-Z0-9]{1,8}$', s):
