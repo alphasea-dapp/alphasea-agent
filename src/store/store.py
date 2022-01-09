@@ -1,4 +1,3 @@
-
 from web3 import Web3
 import threading
 from collections import defaultdict
@@ -8,10 +7,19 @@ from nacl.secret import SecretBox
 import nacl.utils
 from .event_indexer import EventIndexer
 
+
 # thread safe
 # 暗号化などを隠蔽する
 # 自分の予測は購入できないので、シミュレーションする
 # インターフェースはsnakecase
+# インターフェースのcontentはcontentのままで
+# 復号化に失敗したcontentはNone
+
+# 未実装 (不正を行うインセンティブが無いので)
+# 現在の公開鍵で購入したものは公開鍵で復号
+# それ以外はpublishされた共有鍵で復号
+# (publishされたものとshipされたものが違う場合に対応するため)
+
 
 class Store:
     def __init__(self, w3, contract):
@@ -28,23 +36,13 @@ class Store:
         with self._lock:
             return self._event_indexer.fetch_tournaments(tournament_id=tournament_id).iloc[0].to_dict()
 
-    # def fetch_last_prediction(self, model_id: str, max_execution_start_at: int):
-    #     with self._lock:
-    #         predictions = self._event_indexer.fetch_predictions(model_id=model_id)
-    #         predictions = predictions[predictions['execution_start_at'] <= max_execution_start_at]
-    #         if predictions.shape[0] == 0:
-    #             return None
-    #         prediction = predictions.iloc[-1]
-    #
-    #         purchases = self._event_indexer.fetch_purchases(
-    #             model_id=prediction['model_id'],
-    #             execution_start_at=prediction['execution_start_at'],
-    #         )
-    #
-    #         return {
-    #             **prediction.to_dict(),
-    #             'purchase_count': purchases.shape[0],
-    #         }
+    def fetch_last_prediction(self, model_id: str, max_execution_start_at: int):
+        with self._lock:
+            predictions = self._event_indexer.fetch_predictions(model_id=model_id)
+            predictions = predictions[predictions['execution_start_at'] <= max_execution_start_at]
+            if predictions.shape[0] == 0:
+                return None
+            return self._predictions_to_dict_list(predictions)[0]
 
     def fetch_predictions(self, tournament_id: str, execution_start_at: int):
         with self._lock:
@@ -53,21 +51,7 @@ class Store:
                 execution_start_at=execution_start_at
             )
             predictions = predictions.loc[predictions['model_id'].isin(models['model_id'].unique())]
-
-            results = []
-            for idx, prediction in predictions.iterrows():
-                if pd.isna(prediction['content_key']):
-                    content = None
-                else:
-                    box = SecretBox(prediction['content_key'])
-                    content = box.decrypt(prediction['encrypted_content'])
-
-                results.append({
-                    **prediction.to_dict(),
-                    'content': content,
-                })
-
-            return results
+            return self._predictions_to_dict_list(predictions)
 
     def fetch_predictions_to_publish(self, tournament_id: str, execution_start_at: int):
         with self._lock:
@@ -80,12 +64,7 @@ class Store:
             )
             predictions = predictions.loc[predictions['model_id'].isin(models['model_id'].unique())]
             predictions = predictions.loc[predictions['content_key'].isna()]
-
-            results = []
-            for idx, prediction in predictions.iterrows():
-                results.append(prediction.to_dict())
-
-            return results
+            return self._predictions_to_dict_list(predictions)
 
     def fetch_purchases_to_ship(self, tournament_id: str, execution_start_at: int):
         with self._lock:
@@ -154,7 +133,7 @@ class Store:
 
             tx_hash = self._contract.functions.createModels(params_list2).transact()
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
-            return { 'receipt': dict(receipt) }
+            return {'receipt': dict(receipt)}
 
     def create_predictions(self, params_list):
         with self._lock:
@@ -187,7 +166,7 @@ class Store:
 
             tx_hash = self._contract.functions.createPredictions(params_list2).transact()
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
-            return { 'receipt': dict(receipt) }
+            return {'receipt': dict(receipt)}
 
     def create_purchases(self, params_list):
         with self._lock:
@@ -215,9 +194,9 @@ class Store:
 
             tx_hash = self._contract.functions.createPurchases(
                 params_list2
-            ).transact({ 'value': sum_price })
+            ).transact({'value': sum_price})
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
-            return { 'receipt': dict(receipt), 'sum_price': sum_price }
+            return {'receipt': dict(receipt), 'sum_price': sum_price}
 
     def ship_purchases(self, params_list):
         with self._lock:
@@ -247,13 +226,14 @@ class Store:
 
             tx_hash = self._contract.functions.shipPurchases(params_list2).transact()
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
-            return { 'receipt': dict(receipt) }
+            return {'receipt': dict(receipt)}
 
     def publish_predictions(self, params_list):
         with self._lock:
             params_list2 = []
             for params in params_list:
-                content_key_generator = self._predictions[params['model_id']][params['execution_start_at']]['content_key_generator']
+                content_key_generator = self._predictions[params['model_id']][params['execution_start_at']][
+                    'content_key_generator']
                 params_list2.append({
                     'modelId': params['model_id'],
                     'executionStartAt': params['execution_start_at'],
@@ -262,4 +242,31 @@ class Store:
 
             tx_hash = self._contract.functions.publishPredictions(params_list2).transact()
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
-            return { 'receipt': dict(receipt) }
+            return {'receipt': dict(receipt)}
+
+    def _predictions_to_dict_list(self, predictions):
+        predictions = predictions.copy()
+
+        # 購入数を追加
+        purchases = self._event_indexer.fetch_purchases()
+        purchase_count = purchases.groupby(['model_id', 'execution_start_at'])['purchaser'].count()
+        predictions = predictions.join(
+            purchase_count.rename('purchase_count'),
+            on=['model_id', 'execution_start_at'],
+            how='left'
+        )
+        predictions['purchase_count'] = predictions['purchase_count'].fillna(0)
+
+        results = []
+        for _, prediction in predictions.iterrows():
+            content = None
+            if not pd.isna(prediction['content_key']):
+                box = SecretBox(prediction['content_key'])
+                content = box.decrypt(prediction['encrypted_content'])
+
+            results.append({
+                **prediction.to_dict(),
+                'content': content,
+            })
+
+        return results

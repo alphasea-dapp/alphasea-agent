@@ -16,7 +16,7 @@ from src.store.event_indexer import EventIndexer
 
 
 class TestStoreCreatePurchases(BaseHardhatTestCase):
-    def test_double(self):
+    def test_two(self):
         w3 = create_web3()
         contract = create_contract(w3)
         store = Store(w3, contract)

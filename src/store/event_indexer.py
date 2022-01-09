@@ -139,4 +139,4 @@ def _filter_df(df, conditions):
     for name, value in conditions:
         if value is not None:
             df = df.loc[df[name] == value]
-    return df
+    return df.copy()
