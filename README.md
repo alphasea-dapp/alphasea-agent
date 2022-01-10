@@ -146,3 +146,8 @@ docker-compose -f docker-compose-dev.yml run --rm dev-agent flake8 . --count --e
 github actionsでtestとlintを行っている。
 
 設定: .github/workflows/python-app.yml
+
+### TODO
+
+- [ ] 自分の予測を購入しない処理 (内部で0ETHで購入したことにする処理。予算ゼロでも有効)
+- [ ] モデル選択のコスト計算にガス代を入れる
