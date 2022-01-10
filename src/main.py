@@ -28,8 +28,8 @@ store = Store(w3=w3, contract=contract)
 
 model_selector = EqualWeightModelSelector(
     execution_cost=float(os.getenv('ALPHASEA_EXECUTOR_EXECUTION_COST')),
-    assets=float(os.getenv('ALPHASEA_EXECUTOR_ASSETS')),
-    budget=float(os.getenv('ALPHASEA_EXECUTOR_BUDGET')),
+    assets=float(os.getenv('ALPHASEA_EXECUTOR_ASSETS_ETH')) / 1e18,
+    budget=float(os.getenv('ALPHASEA_EXECUTOR_BUDGET_ETH')) / 1e18,
 )
 
 executor = Executor(
@@ -44,7 +44,7 @@ executor = Executor(
 predictor = Predictor(
     store=store,
     tournament_id=default_tournament_id,
-    price_min=float(os.getenv('ALPHASEA_PREDICTOR_PRICE_MIN')),
+    price_min=float(os.getenv('ALPHASEA_PREDICTOR_PRICE_MIN_ETH')) / 1e18,
     price_increase_rate=float(os.getenv('ALPHASEA_PREDICTOR_PRICE_INCREASE_RATE')),
     price_decrease_rate=float(os.getenv('ALPHASEA_PREDICTOR_PRICE_DECREASE_RATE')),
 )
