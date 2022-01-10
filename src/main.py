@@ -10,9 +10,15 @@ from .market_data_store.data_fetcher_builder import DataFetcherBuilder
 from .market_data_store.market_data_store import MarketDataStore
 from .model_selection.equal_weight_model_selector import EqualWeightModelSelector
 
+
+def _eth_to_wei(x):
+    return int(x * 1e18)
+
+
 default_tournament_id = os.getenv('ALPHASEA_DEFAULT_TOURNAMENT_ID')
 executor_evaluation_periods = int(os.getenv('ALPHASEA_EXECUTOR_EVALUATION_PERIODS'))
 executor_symbol_white_list = os.getenv('ALPHASEA_EXECUTOR_SYMBOL_WHITE_LIST').split(',')
+executor_budget = _eth_to_wei(float(os.getenv('ALPHASEA_EXECUTOR_BUDGET_ETH')))
 
 data_fetcher_builder = DataFetcherBuilder()
 market_data_store = MarketDataStore(
@@ -24,12 +30,15 @@ contract = w3.eth.contract(
     address=os.getenv('ALPHASEA_CONTRACT_ADDRESS'),
     abi=os.getenv('ALPHASEA_CONTRACT_ABI'),
 )
-store = Store(w3=w3, contract=contract)
+store = Store(
+    w3=w3,
+    contract=contract,
+)
 
 model_selector = EqualWeightModelSelector(
     execution_cost=float(os.getenv('ALPHASEA_EXECUTOR_EXECUTION_COST')),
-    assets=float(os.getenv('ALPHASEA_EXECUTOR_ASSETS_ETH')) / 1e18,
-    budget=float(os.getenv('ALPHASEA_EXECUTOR_BUDGET_ETH')) / 1e18,
+    assets=_eth_to_wei(float(os.getenv('ALPHASEA_EXECUTOR_ASSETS_ETH'))),
+    budget=executor_budget,
 )
 
 executor = Executor(
@@ -44,7 +53,7 @@ executor = Executor(
 predictor = Predictor(
     store=store,
     tournament_id=default_tournament_id,
-    price_min=float(os.getenv('ALPHASEA_PREDICTOR_PRICE_MIN_ETH')) / 1e18,
+    price_min=_eth_to_wei(float(os.getenv('ALPHASEA_PREDICTOR_PRICE_MIN_ETH'))),
     price_increase_rate=float(os.getenv('ALPHASEA_PREDICTOR_PRICE_INCREASE_RATE')),
     price_decrease_rate=float(os.getenv('ALPHASEA_PREDICTOR_PRICE_DECREASE_RATE')),
 )
@@ -54,14 +63,14 @@ app = FastAPI()
 
 @app.on_event("startup")
 def startup_event():
-    executor.start_thread()
+    if executor_budget > 0:
+        executor.start_thread()
     predictor.start_thread()
 
 
 @app.post("/submit_prediction")
 def post_submit_prediction(model_id: str, execution_start_at: int,
                            prediction_license: str, content: str):
-
     return predictor.submit_prediction(
         model_id=model_id,
         execution_start_at=execution_start_at,
