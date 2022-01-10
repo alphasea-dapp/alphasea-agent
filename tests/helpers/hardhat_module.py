@@ -5,8 +5,8 @@ from web3.method import default_root_munger
 
 class HardhatModule(Module):
 
-    def reset(self):
-        return self._hardhat_reset()
+    # def reset(self):
+    #     return self._hardhat_reset()
 
     def set_next_block_timestamp(self, timestamp):
         return self._evm_setNextBlockTimestamp(timestamp)
