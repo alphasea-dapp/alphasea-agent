@@ -6,8 +6,7 @@ from ..prediction_format import validate_content, normalize_content
 
 class Predictor:
     def __init__(self, store=None, tournament_id=None, time_func=None,
-                 price_min=None, price_increase_rate=None, price_decrease_rate=None,
-                 disable_thread=False):
+                 price_min=None, price_increase_rate=None, price_decrease_rate=None):
         self._store = store
         self._predictions = defaultdict(defaultdict)
         self._tournament_id = tournament_id
@@ -19,10 +18,11 @@ class Predictor:
         self._price_min = price_min
         self._price_increase_rate = price_increase_rate
         self._price_decrease_rate = price_decrease_rate
+        self._thread = None
 
-        if not disable_thread:
-            self._thread = threading.Thread(target=self._run)
-            self._thread.start()
+    def start_thread(self):
+        self._thread = threading.Thread(target=self._run)
+        self._thread.start()
 
     def submit_prediction(self, model_id: str, execution_start_at: int,
                           prediction_license: str, content: str):

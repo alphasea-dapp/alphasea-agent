@@ -25,7 +25,6 @@ class TestPredictorSubmitPrediction(BaseHardhatTestCase):
         predictor = Predictor(
             store=store,
             tournament_id=get_tournament_id(),
-            disable_thread=True,
         )
 
         model_id = 'model1'
@@ -59,7 +58,6 @@ XRP,0.3"""
         predictor = Predictor(
             store=store,
             tournament_id=get_tournament_id(),
-            disable_thread=True,
         )
 
         model_id = 'model1'
@@ -81,7 +79,6 @@ XRP,0.3"""
         predictor = Predictor(
             store=store,
             tournament_id=get_tournament_id(),
-            disable_thread=True,
         )
 
         model_id = 'model1'

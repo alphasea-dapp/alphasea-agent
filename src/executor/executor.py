@@ -6,7 +6,7 @@ from ..prediction_format import validate_content, parse_content
 
 class Executor:
     def __init__(self, store=None, tournament_id=None, time_func=None, evaluation_periods=None,
-                 model_selector=None, disable_thread=False, market_data_store=None,
+                 model_selector=None, market_data_store=None,
                  symbol_white_list=None):
         self._store = store
         self._purchase_infos = {}
@@ -19,10 +19,11 @@ class Executor:
         self._model_selector = model_selector
         self._market_data_store = market_data_store
         self._symbol_white_list = symbol_white_list.copy()
+        self._thread = None
 
-        if not disable_thread:
-            self._thread = threading.Thread(target=self._run)
-            self._thread.start()
+    def start_thread(self):
+        self._thread = threading.Thread(target=self._run)
+        self._thread.start()
 
     def get_blended_position(self, execution_start_at: int):
         purchases = self._store.fetch_shipped_purchases(

@@ -41,7 +41,6 @@ class TestExecutorStep(BaseHardhatTestCase):
         executor = Executor(
             store=store_purchaser,
             tournament_id=get_tournament_id(),
-            disable_thread=True,
             time_func=lambda: executor_time,
             evaluation_periods=20,
             model_selector=AllModelSelector(),
@@ -125,7 +124,6 @@ class TestExecutorStep(BaseHardhatTestCase):
         executor = Executor(
             store=store_purchaser,
             tournament_id=get_tournament_id(),
-            disable_thread=True,
             time_func=lambda: executor_time,
             evaluation_periods=20,
             model_selector=AllModelSelector(),

@@ -23,7 +23,6 @@ class TestPredictorCalcPredictionPrice(BaseHardhatTestCase):
         store = Store(w3, contract)
         predictor = Predictor(
             store=store,
-            disable_thread=True,
             price_min=100,
             price_increase_rate=0.1,
             price_decrease_rate=0.2,
@@ -43,7 +42,6 @@ class TestPredictorCalcPredictionPrice(BaseHardhatTestCase):
         store = Store(w3, contract)
         predictor = Predictor(
             store=store,
-            disable_thread=True,
             price_min=100,
             price_increase_rate=0.1,
             price_decrease_rate=0.2,
@@ -76,7 +74,6 @@ class TestPredictorCalcPredictionPrice(BaseHardhatTestCase):
         store = Store(w3, contract)
         predictor = Predictor(
             store=store,
-            disable_thread=True,
             price_min=100,
             price_increase_rate=0.1,
             price_decrease_rate=0.2,
@@ -114,7 +111,6 @@ class TestPredictorCalcPredictionPrice(BaseHardhatTestCase):
 
         predictor = Predictor(
             store=store,
-            disable_thread=True,
             price_min=100,
             price_increase_rate=0.1,
             price_decrease_rate=0.2,

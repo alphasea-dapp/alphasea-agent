@@ -29,7 +29,6 @@ class TestPredictorStep(BaseHardhatTestCase):
         predictor = Predictor(
             store=store,
             tournament_id=get_tournament_id(),
-            disable_thread=True,
             price_min=100,
             time_func=lambda: predictor_time,
         )
