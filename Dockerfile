@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir \
     pandas==1.1.5 \
     PyNaCl==1.4.0 \
     scikit-learn==0.24 \
+    simanneal==0.5.0 \
     stringcase==1.2.0 \
     uvicorn[standard]==0.16.0 \
     web3==5.25.0
