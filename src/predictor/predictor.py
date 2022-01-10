@@ -10,7 +10,7 @@ class Predictor:
         self._store = store
         self._predictions = defaultdict(defaultdict)
         self._tournament_id = tournament_id
-        self._tournament = self._store.fetch_tournament(tournament_id)
+        self._tournament = None
         self._time_func = time.time if time_func is None else time_func
         self._lock = threading.Lock()
         self._interval_sec = 15
@@ -111,6 +111,8 @@ class Predictor:
         day_seconds = 24 * 60 * 60
         now = int(self._time_func())
 
+        if self._tournament is None:
+            self._tournament = self._store.fetch_tournament(self._tournament_id)
         t = self._tournament
 
         prediction_time_buffer = int(t['prediction_time'] * 0.2)

@@ -10,8 +10,8 @@ class Executor:
                  symbol_white_list=None):
         self._store = store
         self._purchase_infos = {}
+        self._tournament = None
         self._tournament_id = tournament_id
-        self._tournament = self._store.fetch_tournament(tournament_id)
         self._time_func = time.time if time_func is None else time_func
         self._interval_sec = 15
 
@@ -128,6 +128,8 @@ class Executor:
         day_seconds = 24 * 60 * 60
         now = int(self._time_func())
 
+        if self._tournament is None:
+            self._tournament = self._store.fetch_tournament(self._tournament_id)
         t = self._tournament
 
         purchase_time_buffer = int(t['purchase_time'] * 0.2)

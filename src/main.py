@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 
+from io import StringIO
 import os
 import time
 from web3.auto import w3
@@ -79,8 +80,11 @@ def post_submit_prediction(model_id: str, execution_start_at: int,
     )
 
 
-@app.get("/blended_prediction")
-def get_blended_position(execution_start_at: int):
-    return executor.get_blended_position(
+@app.get("/blended_prediction.csv")
+def get_blended_position_csv(execution_start_at: int):
+    df = executor.get_blended_position(
         execution_start_at=execution_start_at,
     )
+    output = StringIO()
+    df.to_csv(output, index=False)
+    return Response(content=output.value(), media_type="text/csv")
