@@ -7,7 +7,6 @@ from nacl.secret import SecretBox
 import nacl.utils
 from .event_indexer import EventIndexer
 
-
 # thread safe
 # 暗号化などを隠蔽する
 # 自分の予測は購入できないので、シミュレーションする
@@ -22,13 +21,15 @@ from .event_indexer import EventIndexer
 
 
 class Store:
-    def __init__(self, w3, contract):
+    def __init__(self, w3, contract, wallet_private_key=None):
         self._w3 = w3
         self._contract = contract
         self._lock = threading.Lock()
         self._private_key = PrivateKey.generate()
         self._predictions = defaultdict(dict)
         self._event_indexer = EventIndexer(w3, contract)
+        self._wallet_private_key = wallet_private_key
+        self._nonce = 0
 
     # read
 
@@ -131,7 +132,7 @@ class Store:
                     'predictionLicense': prediction_license
                 })
 
-            tx_hash = self._contract.functions.createModels(params_list2).transact()
+            tx_hash = self._execute_transaction(self._contract.functions.createModels(params_list2))
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             return {'receipt': dict(receipt)}
 
@@ -164,7 +165,7 @@ class Store:
                     'price': price,
                 })
 
-            tx_hash = self._contract.functions.createPredictions(params_list2).transact()
+            tx_hash = self._execute_transaction(self._contract.functions.createPredictions(params_list2))
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             return {'receipt': dict(receipt)}
 
@@ -192,9 +193,9 @@ class Store:
                     'publicKey': bytes(self._private_key.public_key),
                 })
 
-            tx_hash = self._contract.functions.createPurchases(
+            tx_hash = self._execute_transaction(self._contract.functions.createPurchases(
                 params_list2
-            ).transact({'value': sum_price})
+            ), params={'value': sum_price})
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             return {'receipt': dict(receipt), 'sum_price': sum_price}
 
@@ -224,7 +225,7 @@ class Store:
                     'encryptedContentKey': encrypted_content_key,
                 })
 
-            tx_hash = self._contract.functions.shipPurchases(params_list2).transact()
+            tx_hash = self._execute_transaction(self._contract.functions.shipPurchases(params_list2))
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             return {'receipt': dict(receipt)}
 
@@ -240,7 +241,7 @@ class Store:
                     'contentKeyGenerator': content_key_generator,
                 })
 
-            tx_hash = self._contract.functions.publishPredictions(params_list2).transact()
+            tx_hash = self._execute_transaction(self._contract.functions.publishPredictions(params_list2))
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             return {'receipt': dict(receipt)}
 
@@ -270,3 +271,33 @@ class Store:
             })
 
         return results
+
+    def _execute_transaction(self, func_obj, params={}):
+        if self._wallet_private_key is None:
+            # remote private key
+            return func_obj.transact(params)
+        else:
+            # self._nonce += 1
+            txn = func_obj.buildTransaction({
+                # 'chainId': self._chain_id,
+                'gas': 200000,
+                'maxFeePerGas': self._w3.toWei('2', 'gwei'),
+                'maxPriorityFeePerGas': self._w3.toWei('1', 'gwei'),
+                'nonce': self._nonce,
+                'from': Web3.toChecksumAddress(self._w3.default_account),
+                **params
+            })
+            print(txn)
+            # self._nonce += 1
+            gas_estimate = self._w3.eth.estimateGas(txn)
+            txn = func_obj.buildTransaction({
+                # 'chainId': self._chain_id,
+                'gas': gas_estimate,
+                'maxFeePerGas': self._w3.toWei('2', 'gwei'),
+                'maxPriorityFeePerGas': self._w3.toWei('1', 'gwei'),
+                'nonce': self._nonce,
+                **params
+            })
+            signed_txn = self._w3.eth.account.sign_transaction(txn, private_key=self._wallet_private_key)
+            return self._w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+

@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir \
     coverage==6.2 \
     "git+https://github.com/richmanbtc/crypto_data_fetcher.git@v0.0.17#egg=crypto_data_fetcher" \
     cvxpy==1.1.10 \
+    eth-keyfile==0.5.1 \
     fastapi==0.70.1 \
     flake8==4.0.1 \
     numpy==1.19.5 \
