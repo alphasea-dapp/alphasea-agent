@@ -27,8 +27,6 @@ agentの稼働にはETHウォレットが必要です。
 agentで使う用のETHウォレットの秘密鍵を生成します。
 パスワードはdefault_wallet_password内に記載されたalphasea_passwordのままでも、
 変えても良いと思います。
-パスワードを変える場合は、
-docker-compose.ymlも修正する必要があります。
 
 [アカウント操作について](https://geth.ethereum.org/docs/interface/managing-your-accounts)
 
