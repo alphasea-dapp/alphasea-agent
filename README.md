@@ -50,6 +50,13 @@ docker run --rm -v "$(pwd)/data/keystore:/root/.ethereum/keystore:ro" ethereum/c
 docker run --rm -v "$(pwd)/default_wallet_password:/default_wallet_password:ro" -v "$(pwd)/data/keystore:/root/.ethereum/keystore:ro" -it ethereum/client-go console --password /default_wallet_password --unlock 0
 ```
 
+### ウォレットにETHを入れる
+
+alphasea-agentは動作にETHが必要です(gas代や予測購入費用)。
+testnetの場合はfaucetサイトで入れてください。
+mainnetの場合は送金で入れてください。
+アドレスは前項の手順で見れると思います。
+
 ### agentとgethを起動
 
 mainnet (未実装)
@@ -107,7 +114,7 @@ environment variables (defined in docker-compose.yml)
 以下でエージェントを立ち上げ
 
 ```bash
-docker-compose -f docker-compose-dev.yml up
+docker-compose -f docker-compose-dev.yml up -d
 ```
 
 以下を開く
