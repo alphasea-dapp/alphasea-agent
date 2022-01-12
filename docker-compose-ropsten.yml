@@ -10,7 +10,7 @@ services:
     volumes:
       - ./.git:/app/.git:ro
       - ./src:/app/src:ro
-      - eth_socket_volume:/eth_socket
+      - ropsten_eth_socket_volume:/eth_socket
     working_dir: /app
     environment:
       WEB3_PROVIDER_URI: file:///eth_socket/geth.ipc
@@ -48,7 +48,7 @@ services:
       - ./default_wallet_password:/default_wallet_password:ro
       - ./tmp/ropsten/geth:/root/.ethereum/ropsten/geth
       - ./data/keystore:/root/.ethereum/ropsten/keystore:ro
-      - eth_socket_volume:/eth_socket
+      - ropsten_eth_socket_volume:/eth_socket
     restart: always
     logging:
       driver: "json-file"
@@ -56,4 +56,4 @@ services:
         max-size: "32m"
 
 volumes:
-  eth_socket_volume:
+  ropsten_eth_socket_volume:
