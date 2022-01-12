@@ -69,12 +69,19 @@ def startup_event():
     predictor.start_thread()
 
 
+@app.on_event("shutdown")
+def shutdown_event():
+    if executor_budget > 0:
+        executor.terminate_thread()
+    predictor.terminate_thread()
+
+
 @app.post("/submit_prediction")
 def post_submit_prediction(model_id: str, execution_start_at: int,
                            prediction_license: str, content: str):
     predictor.submit_prediction(
         model_id=model_id,
-        execution_start_at=execution_start_at,
+        execution_start_at=int(execution_start_at),
         prediction_license=prediction_license,
         content=content.encode(),
     )
@@ -84,7 +91,7 @@ def post_submit_prediction(model_id: str, execution_start_at: int,
 @app.get("/blended_prediction.csv")
 def get_blended_position_csv(execution_start_at: int):
     df = executor.get_blended_position(
-        execution_start_at=execution_start_at,
+        execution_start_at=int(execution_start_at),
     )
     output = StringIO()
     df.to_csv(output)

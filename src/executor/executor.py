@@ -20,10 +20,15 @@ class Executor:
         self._market_data_store = market_data_store
         self._symbol_white_list = symbol_white_list.copy()
         self._thread = None
+        self._thread_terminated = False
 
     def start_thread(self):
         self._thread = threading.Thread(target=self._run)
         self._thread.start()
+
+    def terminate_thread(self):
+        self._thread_terminated = True
+        self._thread.join()
 
     def get_blended_position(self, execution_start_at: int):
         purchases = self._store.fetch_shipped_purchases(
@@ -54,7 +59,7 @@ class Executor:
         ], axis=1)
 
     def _run(self):
-        while True:
+        while not self._thread_terminated:
             self._step()
             time.sleep(self._interval_sec)
 

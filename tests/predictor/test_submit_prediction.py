@@ -93,3 +93,46 @@ XRP,0.3"""
                 prediction_license='MIT',
                 content=content
             )
+
+    def test_execution_start_at_error(self):
+        w3 = create_web3()
+        contract = create_contract(w3)
+        store = Store(w3, contract)
+        predictor = Predictor(
+            store=store,
+            tournament_id=get_tournament_id(),
+        )
+
+        model_id = 'model1'
+        content = b"""position,symbol
+0.1,BTC"""
+
+        with self.assertRaisesRegex(Exception, 'invalid execution_start_at'):
+            predictor.submit_prediction(
+                model_id=model_id,
+                execution_start_at=1,
+                prediction_license='CC0-1.0',
+                content=content
+            )
+
+    def test_model_id_error(self):
+        w3 = create_web3()
+        contract = create_contract(w3)
+        store = Store(w3, contract)
+        predictor = Predictor(
+            store=store,
+            tournament_id=get_tournament_id(),
+        )
+
+        model_id = 'a'
+        execution_start_at = get_future_execution_start_at_timestamp()
+        content = b"""position,symbol
+0.1,BTC"""
+
+        with self.assertRaisesRegex(Exception, 'invalid model_id'):
+            predictor.submit_prediction(
+                model_id=model_id,
+                execution_start_at=execution_start_at,
+                prediction_license='CC0-1.0',
+                content=content
+            )

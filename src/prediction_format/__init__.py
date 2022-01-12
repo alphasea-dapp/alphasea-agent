@@ -2,11 +2,7 @@ from io import StringIO
 import re
 import numpy as np
 import pandas as pd
-
-
-class ValidationError(Exception):
-    pass
-
+from ..types.exceptions import ValidationError
 
 def parse_content(content):
     csv_str = content.decode('utf-8')

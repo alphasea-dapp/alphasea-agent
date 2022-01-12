@@ -2,6 +2,7 @@ import time
 from collections import defaultdict
 import threading
 from ..prediction_format import validate_content, normalize_content
+from .model_id import validate_model_id
 
 
 class Predictor:
@@ -19,16 +20,26 @@ class Predictor:
         self._price_increase_rate = price_increase_rate
         self._price_decrease_rate = price_decrease_rate
         self._thread = None
+        self._thread_terminated = False
 
     def start_thread(self):
         self._thread = threading.Thread(target=self._run)
         self._thread.start()
+
+    def terminate_thread(self):
+        self._thread_terminated = True
+        self._thread.join()
 
     def submit_prediction(self, model_id: str, execution_start_at: int,
                           prediction_license: str, content: bytes):
 
         if prediction_license != 'CC0-1.0':
             raise Exception('prediction_license must be CC0-1.0')
+
+        if execution_start_at % (24 * 60 * 60) != self._get_tournament()['execution_start_at']:
+            raise Exception('invalid execution_start_at')
+
+        validate_model_id(model_id)
 
         validate_content(content)
         content = normalize_content(content)
@@ -41,7 +52,7 @@ class Predictor:
             self._predictions[model_id][execution_start_at] = prediction
 
     def _run(self):
-        while True:
+        while not self._thread_terminated:
             try:
                 self._step()
             except Exception as e:
@@ -107,13 +118,16 @@ class Predictor:
             })
         self._store.publish_predictions(publish_prediction_params_list)
 
+    def _get_tournament(self):
+        if self._tournament is None:
+            self._tournament = self._store.fetch_tournament(self._tournament_id)
+        return self._tournament
+
     def _step(self):
         day_seconds = 24 * 60 * 60
         now = int(self._time_func())
 
-        if self._tournament is None:
-            self._tournament = self._store.fetch_tournament(self._tournament_id)
-        t = self._tournament
+        t = self._get_tournament()
 
         prediction_time_buffer = int(t['prediction_time'] * 0.2)
         prediction_start_at = (t['execution_start_at'] - t['execution_preparation_time'] -
@@ -147,3 +161,4 @@ class Predictor:
                 return int(prediction['price'] * (1 + self._price_increase_rate))
             else:
                 return max(self._price_min, int(prediction['price'] * (1 - self._price_decrease_rate)))
+
