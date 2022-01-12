@@ -17,7 +17,7 @@ class MarketDataStore:
         for symbol in symbols:
             df = self._get_df_ohlcv(
                 exchange='ftx',
-                market=symbol,
+                market=symbol + '-PERP',
                 interval=60,
                 price_type='index',
                 force_fetch=True

@@ -72,12 +72,13 @@ def startup_event():
 @app.post("/submit_prediction")
 def post_submit_prediction(model_id: str, execution_start_at: int,
                            prediction_license: str, content: str):
-    return predictor.submit_prediction(
+    predictor.submit_prediction(
         model_id=model_id,
         execution_start_at=execution_start_at,
         prediction_license=prediction_license,
-        content=content,
+        content=content.encode(),
     )
+    return {}
 
 
 @app.get("/blended_prediction.csv")
@@ -86,5 +87,5 @@ def get_blended_position_csv(execution_start_at: int):
         execution_start_at=execution_start_at,
     )
     output = StringIO()
-    df.to_csv(output, index=False)
-    return Response(content=output.value(), media_type="text/csv")
+    df.to_csv(output)
+    return Response(content=output.getvalue(), media_type="text/csv")

@@ -67,7 +67,7 @@ def validate_content(content):
 
     if float_position.isin([np.inf, -np.inf]).any():
         raise ValidationError('position contains inf')
-    if float_position.abs().sum() > 1:
+    if float_position.abs().sum() > 1.00001:
         raise ValidationError('sum of abs(position) must be in [-1, 1]')
 
 

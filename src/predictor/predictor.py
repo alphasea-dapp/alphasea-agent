@@ -25,7 +25,7 @@ class Predictor:
         self._thread.start()
 
     def submit_prediction(self, model_id: str, execution_start_at: int,
-                          prediction_license: str, content: str):
+                          prediction_license: str, content: bytes):
 
         if prediction_license != 'CC0-1.0':
             raise Exception('prediction_license must be CC0-1.0')

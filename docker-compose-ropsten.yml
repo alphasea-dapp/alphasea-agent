@@ -26,6 +26,12 @@ services:
       ALPHASEA_EXECUTOR_BUDGET_ETH: 0
       ALPHASEA_EXECUTOR_EVALUATION_PERIODS: 20
     command: ['uvicorn', 'src.main:app', '--host', '0.0.0.0']
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "32m"
+
   ropsten_eth_node:
     image: ethereum/client-go
     command:
@@ -43,6 +49,11 @@ services:
       - ./tmp/ropsten/geth:/root/.ethereum/ropsten/geth
       - ./data/keystore:/root/.ethereum/ropsten/keystore:ro
       - eth_socket_volume:/eth_socket
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "32m"
 
 volumes:
   eth_socket_volume:
