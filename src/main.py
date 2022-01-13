@@ -103,8 +103,8 @@ def post_submit_prediction(model_id: str = Body(...), execution_start_at: int = 
 
 
 @app.get("/blended_prediction.csv")
-def get_blended_position_csv(execution_start_at: int):
-    df = executor.get_blended_position(
+def get_blended_prediction_csv(execution_start_at: int):
+    df = executor.get_blended_prediction(
         execution_start_at=int(execution_start_at),
     )
     output = StringIO()

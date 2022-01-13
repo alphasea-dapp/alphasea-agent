@@ -30,7 +30,7 @@ class Executor:
         self._thread_terminated = True
         self._thread.join()
 
-    def get_blended_position(self, execution_start_at: int):
+    def get_blended_prediction(self, execution_start_at: int):
         purchases = self._store.fetch_shipped_purchases(
             tournament_id=self._tournament_id,
             execution_start_at=execution_start_at

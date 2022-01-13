@@ -98,11 +98,11 @@ class TestExecutorStep(BaseHardhatTestCase):
         )])
 
         # get_blended_prediction
-        blended_position = executor.get_blended_position(execution_start_at=execution_start_at)
+        blended_prediction = executor.get_blended_prediction(execution_start_at=execution_start_at)
         expected = pd.DataFrame([
             ['BTC', 0.5],
         ], columns=['symbol', 'position']).set_index('symbol')
-        assert_frame_equal(blended_position, expected)
+        assert_frame_equal(blended_prediction, expected)
 
     def test_empty(self):
         w3 = create_web3()
@@ -160,6 +160,6 @@ class TestExecutorStep(BaseHardhatTestCase):
         self.assertEqual(purchases.shape[0], 0)
 
         # get_blended_prediction
-        blended_position = executor.get_blended_position(execution_start_at=execution_start_at)
+        blended_prediction = executor.get_blended_prediction(execution_start_at=execution_start_at)
         expected = pd.DataFrame([], columns=['symbol', 'position']).set_index('symbol')
-        assert_frame_equal(blended_position, expected)
+        assert_frame_equal(blended_prediction, expected)
