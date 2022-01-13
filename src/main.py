@@ -11,7 +11,7 @@ from .predictor.predictor import Predictor
 from .market_data_store.data_fetcher_builder import DataFetcherBuilder
 from .market_data_store.market_data_store import MarketDataStore
 from .model_selection.equal_weight_model_selector import EqualWeightModelSelector
-from .logger import create_logger, set_log_level_web3
+from .logger import create_logger, set_log_level_web3, customize_uvicorn_log
 
 
 default_tournament_id = os.getenv('ALPHASEA_DEFAULT_TOURNAMENT_ID')
@@ -22,6 +22,7 @@ log_level = os.getenv('ALPHASEA_LOG_LEVEL')
 log_level_web3 = os.getenv('ALPHASEA_LOG_LEVEL_WEB3')
 
 logger = create_logger(log_level)
+customize_uvicorn_log(log_level)
 set_log_level_web3(log_level_web3)
 
 data_fetcher_builder = DataFetcherBuilder()

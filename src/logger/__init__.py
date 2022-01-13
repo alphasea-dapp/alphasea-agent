@@ -19,6 +19,15 @@ def create_logger(log_level):
     return logger
 
 
+def customize_uvicorn_log(log_level):
+    err = StreamHandler()
+    err.setLevel(getattr(logging, log_level.upper()))
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    err.setFormatter(formatter)
+    getLogger('uvicorn').handlers = []
+    getLogger('uvicorn').addHandler(err)
+
+
 def set_log_level_web3(log_level):
     level = getattr(logging, log_level.upper())
     logging.getLogger('web3.RequestManager').setLevel(level)
