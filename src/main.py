@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, Body
 
 from io import StringIO
 import os
@@ -77,8 +77,8 @@ def shutdown_event():
 
 
 @app.post("/submit_prediction")
-def post_submit_prediction(model_id: str, execution_start_at: int,
-                           prediction_license: str, content: str):
+def post_submit_prediction(model_id: str = Body(...), execution_start_at: int = Body(...),
+                           prediction_license: str = Body(...), content: str = Body(...)):
     predictor.submit_prediction(
         model_id=model_id,
         execution_start_at=int(execution_start_at),
