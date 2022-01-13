@@ -80,38 +80,6 @@ class Store:
                 results.append(purchase.to_dict())
             return results
 
-    def fetch_shipped_purchases(self, tournament_id: str, execution_start_at: int):
-        with self._lock:
-            models = self._event_indexer.fetch_models(tournament_id=tournament_id)
-            purchases = self._event_indexer.fetch_purchases(
-                execution_start_at=execution_start_at,
-                purchaser=self._w3.eth.default_account,
-            )
-            purchases = purchases.loc[purchases['model_id'].isin(models['model_id'].unique())]
-            purchases = purchases.loc[~purchases['encrypted_content_key'].isna()]
-
-            predictions = self._event_indexer.fetch_predictions(
-                execution_start_at=execution_start_at
-            )
-            purchases = purchases.merge(
-                predictions[['model_id', 'execution_start_at', 'encrypted_content']],
-                on=['model_id', 'execution_start_at'], how='left'
-            )
-
-            results = []
-            for idx, purchase in purchases.iterrows():
-                unseal_box = SealedBox(self._private_key)
-                content_key = unseal_box.decrypt(purchase['encrypted_content_key'])
-
-                box = SecretBox(content_key)
-                content = box.decrypt(purchase['encrypted_content'])
-
-                results.append({
-                    **purchase.to_dict(),
-                    'prediction_content': content,
-                })
-            return results
-
     # write
 
     def create_models_if_not_exist(self, params_list):
@@ -131,6 +99,9 @@ class Store:
                     'tournamentId': tournament_id,
                     'predictionLicense': prediction_license
                 })
+
+            if len(params_list2) == 0:
+                return {}
 
             tx_hash = self._contract.functions.createModels(params_list2).transact()
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
@@ -165,6 +136,9 @@ class Store:
                     'price': price,
                 })
 
+            if len(params_list2) == 0:
+                return {}
+
             tx_hash = self._contract.functions.createPredictions(params_list2).transact()
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             return {'receipt': dict(receipt)}
@@ -192,6 +166,9 @@ class Store:
                     'executionStartAt': execution_start_at,
                     'publicKey': bytes(self._private_key.public_key),
                 })
+
+            if len(params_list2) == 0:
+                return {}
 
             tx_hash = self._contract.functions.createPurchases(
                 params_list2
@@ -225,6 +202,9 @@ class Store:
                     'encryptedContentKey': encrypted_content_key,
                 })
 
+            if len(params_list2) == 0:
+                return {}
+
             tx_hash = self._contract.functions.shipPurchases(params_list2).transact()
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             return {'receipt': dict(receipt)}
@@ -241,12 +221,37 @@ class Store:
                     'contentKeyGenerator': content_key_generator,
                 })
 
+            if len(params_list2) == 0:
+                return {}
+
             tx_hash = self._contract.functions.publishPredictions(params_list2).transact()
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             return {'receipt': dict(receipt)}
 
     def _predictions_to_dict_list(self, predictions):
         predictions = predictions.copy()
+
+        # 自分の予測はplaintextをくっつける
+        predictions['locally_stored'] = False
+        for idx in predictions.index:
+            model_id = predictions.loc[idx, 'model_id']
+            execution_start_at = predictions.loc[idx, 'execution_start_at']
+            if execution_start_at in self._predictions[model_id]:
+                content_key = self._predictions[model_id][execution_start_at]['content_key']
+                predictions.loc[idx, 'content_key'] = content_key
+                predictions.loc[idx, 'locally_stored'] = True
+
+        # ship済みであればplaintextをくっつける
+        my_purchases = self._event_indexer.fetch_purchases(
+            purchaser=self._w3.eth.default_account,
+            public_key=bytes(self._private_key.public_key),
+        )
+        my_purchases = my_purchases.loc[~my_purchases['encrypted_content_key'].isna()]
+        predictions = predictions.merge(
+            my_purchases[['model_id', 'execution_start_at', 'encrypted_content_key']],
+            on=['model_id', 'execution_start_at'],
+            how='left'
+        )
 
         # 購入数を追加
         purchases = self._event_indexer.fetch_purchases()
@@ -261,6 +266,10 @@ class Store:
         results = []
         for _, prediction in predictions.iterrows():
             content = None
+            if pd.isna(prediction['content_key']) and not pd.isna(prediction['encrypted_content_key']):
+                unseal_box = SealedBox(self._private_key)
+                prediction['content_key'] = unseal_box.decrypt(prediction['encrypted_content_key'])
+
             if not pd.isna(prediction['content_key']):
                 box = SecretBox(prediction['content_key'])
                 content = box.decrypt(prediction['encrypted_content'])

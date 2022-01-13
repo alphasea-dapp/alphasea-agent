@@ -39,7 +39,7 @@ class EventIndexer:
         ])
         self._models = pd.DataFrame(columns=['model_id', 'tournament_id', 'owner'])
         self._predictions = pd.DataFrame(columns=['model_id', 'execution_start_at', 'price', 'content_key', 'encrypted_content'])
-        self._purchases = pd.DataFrame(columns=['model_id', 'execution_start_at', 'purchaser', 'encrypted_content_key'])
+        self._purchases = pd.DataFrame(columns=['model_id', 'execution_start_at', 'purchaser', 'encrypted_content_key', 'public_key'])
 
     def fetch_tournaments(self, tournament_id: str = None):
         self._fetch_events()
@@ -65,13 +65,15 @@ class EventIndexer:
             ('execution_start_at', execution_start_at),
         ])
 
-    def fetch_purchases(self, model_id: str = None, execution_start_at: int = None, purchaser: str = None):
+    def fetch_purchases(self, model_id: str = None, execution_start_at: int = None,
+                        purchaser: str = None, public_key: bytes = None):
         self._fetch_events()
 
         return _filter_df(self._purchases, [
             ('model_id', model_id),
             ('execution_start_at', execution_start_at),
             ('purchaser', purchaser),
+            ('public_key', public_key),
         ])
 
     def _fetch_events(self):

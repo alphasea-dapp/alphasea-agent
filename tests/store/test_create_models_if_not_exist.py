@@ -60,3 +60,10 @@ class TestStoreCreateModelsIfNotExist(BaseHardhatTestCase):
             'tournament_id': get_tournament_id(),
             'prediction_license': 'CC0-1.0',
         })
+
+    def test_empty(self):
+        w3 = create_web3()
+        contract = create_contract(w3)
+        store = Store(w3, contract)
+        result = store.create_models_if_not_exist([])
+        self.assertEqual(result, {})

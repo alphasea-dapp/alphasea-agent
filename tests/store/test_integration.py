@@ -1,4 +1,5 @@
 from unittest import TestCase
+import pandas as pd
 from ..helpers import (
     create_web3,
     create_contract,
@@ -43,7 +44,7 @@ class TestStoreIntegration(BaseHardhatTestCase):
         )])
 
         # select purchase
-        result = store.fetch_predictions(
+        result = store_purchaser.fetch_predictions(
             tournament_id=get_tournament_id(),
             execution_start_at=execution_start_at
         )
@@ -82,16 +83,16 @@ class TestStoreIntegration(BaseHardhatTestCase):
         )])
 
         # check shipped purchase
-        result = store_purchaser.fetch_shipped_purchases(
+        result = store_purchaser.fetch_predictions(
             tournament_id=get_tournament_id(),
             execution_start_at=execution_start_at
         )
+        result = [x for x in result if ~pd.isna(x['encrypted_content_key'])]
         self.assertEqual(result, [{
             **result[0],
             'model_id': model_id,
             'execution_start_at': execution_start_at,
-            'purchaser': w3_purchaser.eth.accounts[1],
-            'prediction_content': content,
+            'content': content,
         }])
 
         # publication

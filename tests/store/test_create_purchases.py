@@ -46,12 +46,12 @@ class TestStoreCreatePurchases(BaseHardhatTestCase):
             model_id=model_id,
             execution_start_at=execution_start_at,
             content=content,
-            price=1 << 200 # test precision
+            price=1 << 200  # test precision
         ), dict(
             model_id=model_id2,
             execution_start_at=execution_start_at,
             content=content,
-            price=1 # test precision
+            price=1  # test precision
         )])
 
         proceed_time(w3, execution_start_at + get_purchase_time_shift())
@@ -75,4 +75,9 @@ class TestStoreCreatePurchases(BaseHardhatTestCase):
             'model_id': model_id2,
         })
 
-
+    def test_empty(self):
+        w3 = create_web3()
+        contract = create_contract(w3)
+        store = Store(w3, contract)
+        result = store.create_purchases([])
+        self.assertEqual(result, {})

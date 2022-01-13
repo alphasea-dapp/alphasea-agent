@@ -1,5 +1,6 @@
 import time
 import threading
+import traceback
 import pandas as pd
 from ..prediction_format import validate_content, parse_content
 
@@ -31,26 +32,36 @@ class Executor:
         self._thread.join()
 
     def get_blended_prediction(self, execution_start_at: int):
-        purchases = self._store.fetch_shipped_purchases(
+        empty_result = pd.DataFrame([], columns=['symbol', 'position']).set_index('symbol')
+        if execution_start_at not in self._purchase_infos:
+            return empty_result
+
+        predictions = self._store.fetch_predictions(
             tournament_id=self._tournament_id,
             execution_start_at=execution_start_at
         )
-
-        if execution_start_at not in self._purchase_infos:
-            return pd.DataFrame([], columns=['symbol', 'position']).set_index('symbol')
+        predictions = pd.DataFrame(predictions)
+        predictions = predictions.set_index('model_id')
 
         df_weight = self._purchase_infos[execution_start_at]['df_weight']
 
         dfs = []
-        for purchase in purchases:
+        for model_id in df_weight.index:
             try:
-                validate_content(purchase['prediction_content'])
-                df = parse_content(purchase['prediction_content'])
-                df['position'] *= df_weight.loc[purchase['model_id'], 'weight']
+                pred = predictions.loc[model_id]
+                validate_content(pred['content'])
+                df = parse_content(pred['content'])
+                df['position'] *= df_weight.loc[model_id, 'weight']
                 df = df.reset_index()
                 dfs.append(df)
             except Exception as e:
+                # self._logger.error(e)
+                # self._logger.error(traceback.format_exc())
                 print(e)
+                print(traceback.format_exc())
+
+        if len(dfs) == 0:
+            return empty_result
 
         df = pd.concat(dfs, axis=1)
 
@@ -98,8 +109,10 @@ class Executor:
             tournament_id=self._tournament_id,
             execution_start_at=execution_start_at
         )
-        df_model = pd.DataFrame(latest_predictions, columns=['model_id', 'price']).set_index('model_id')
+        df_model = pd.DataFrame(latest_predictions, columns=['model_id', 'price', 'locally_stored']).set_index('model_id')
         df_model = df_model.sort_index()
+        # メモリにあるモデルの購入費用は0
+        df_model.loc[df_model['locally_stored'], 'price'] = 0
 
         # リターン取得
         df_market = self._market_data_store.fetch_df_market(
@@ -119,6 +132,8 @@ class Executor:
         # 購入
         create_purchase_params_list = []
         for model_id in df_weight.index:
+            if df_model.loc[model_id, 'locally_stored']:
+                continue
             create_purchase_params_list.append({
                 'model_id': model_id,
                 'execution_start_at': execution_start_at
