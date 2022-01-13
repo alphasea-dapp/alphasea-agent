@@ -22,13 +22,14 @@ from .event_indexer import EventIndexer
 
 
 class Store:
-    def __init__(self, w3, contract):
+    def __init__(self, w3, contract, logger=None):
         self._w3 = w3
         self._contract = contract
         self._lock = threading.Lock()
         self._private_key = PrivateKey.generate()
         self._predictions = defaultdict(dict)
         self._event_indexer = EventIndexer(w3, contract)
+        self._logger = logger
 
     # read
 

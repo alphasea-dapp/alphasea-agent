@@ -7,7 +7,8 @@ from .model_id import validate_model_id
 
 class Predictor:
     def __init__(self, store=None, tournament_id=None, time_func=None,
-                 price_min=None, price_increase_rate=None, price_decrease_rate=None):
+                 price_min=None, price_increase_rate=None, price_decrease_rate=None,
+                 logger=None):
         self._store = store
         self._predictions = defaultdict(defaultdict)
         self._tournament_id = tournament_id

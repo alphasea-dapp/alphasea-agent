@@ -7,7 +7,7 @@ from ..prediction_format import validate_content, parse_content
 class Executor:
     def __init__(self, store=None, tournament_id=None, time_func=None, evaluation_periods=None,
                  model_selector=None, market_data_store=None,
-                 symbol_white_list=None):
+                 symbol_white_list=None, logger=None):
         self._store = store
         self._purchase_infos = {}
         self._tournament = None
