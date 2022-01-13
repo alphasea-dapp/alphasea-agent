@@ -33,6 +33,7 @@ market_data_store = MarketDataStore(
 
 w3.eth.default_account = w3.eth.accounts[0]
 
+logger.info('chain_id {}'.format(w3.eth.chain_id))
 logger.info('account address {}'.format(w3.eth.default_account))
 logger.info('account balance {} ETH'.format(Web3.fromWei(w3.eth.get_balance(w3.eth.default_account), 'ether')))
 
