@@ -7,7 +7,7 @@ from ..prediction_format import validate_content, parse_content
 
 class Executor:
     def __init__(self, store=None, tournament_id=None, time_func=None, evaluation_periods=None,
-                 model_selector=None, market_data_store=None,
+                 model_selector=None, market_data_store=None, budget_rate=None,
                  symbol_white_list=None, logger=None):
         self._store = store
         self._purchase_infos = {}
@@ -20,6 +20,7 @@ class Executor:
         self._model_selector = model_selector
         self._market_data_store = market_data_store
         self._symbol_white_list = symbol_white_list.copy()
+        self._budget_rate = budget_rate
         self._thread = None
         self._thread_terminated = False
 
@@ -124,6 +125,7 @@ class Executor:
             df=df,
             df_model=df_model,
             df_market=df_market,
+            budget=self._budget_rate * self._store.get_balance(),
         )
         df_weight = df_weight.loc[df_weight['weight'] > 0]
         if df_weight.shape[0] == 0:

@@ -17,7 +17,7 @@ from .logger import create_logger, set_log_level_web3, customize_uvicorn_log
 default_tournament_id = os.getenv('ALPHASEA_DEFAULT_TOURNAMENT_ID')
 executor_evaluation_periods = int(os.getenv('ALPHASEA_EXECUTOR_EVALUATION_PERIODS'))
 executor_symbol_white_list = os.getenv('ALPHASEA_EXECUTOR_SYMBOL_WHITE_LIST').split(',')
-executor_budget = Web3.toWei(os.getenv('ALPHASEA_EXECUTOR_BUDGET_ETH'), 'ether')
+executor_budget_rate = float(os.getenv('ALPHASEA_EXECUTOR_BUDGET_RATE'))
 log_level = os.getenv('ALPHASEA_LOG_LEVEL')
 log_level_web3 = os.getenv('ALPHASEA_LOG_LEVEL_WEB3')
 
@@ -51,7 +51,6 @@ store = Store(
 model_selector = EqualWeightModelSelector(
     execution_cost=float(os.getenv('ALPHASEA_EXECUTOR_EXECUTION_COST')),
     assets=Web3.toWei(os.getenv('ALPHASEA_EXECUTOR_ASSETS_ETH'), 'ether'),
-    budget=executor_budget,
 )
 
 executor = Executor(
@@ -61,6 +60,7 @@ executor = Executor(
     model_selector=model_selector,
     market_data_store=market_data_store,
     symbol_white_list=executor_symbol_white_list,
+    budget_rate=executor_budget_rate,
     logger=logger,
 )
 
@@ -78,15 +78,13 @@ app = FastAPI()
 
 @app.on_event("startup")
 def startup_event():
-    if executor_budget > 0:
-        executor.start_thread()
+    executor.start_thread()
     predictor.start_thread()
 
 
 @app.on_event("shutdown")
 def shutdown_event():
-    if executor_budget > 0:
-        executor.terminate_thread()
+    executor.terminate_thread()
     predictor.terminate_thread()
 
 

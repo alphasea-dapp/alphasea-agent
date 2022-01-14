@@ -33,6 +33,10 @@ class Store:
 
     # read
 
+    def get_balance(self):
+        with self._lock:
+            return self._w3.eth.get_balance(self._w3.eth.default_account)
+
     def fetch_tournament(self, tournament_id: str):
         with self._lock:
             return self._event_indexer.fetch_tournaments(tournament_id=tournament_id).iloc[0].to_dict()

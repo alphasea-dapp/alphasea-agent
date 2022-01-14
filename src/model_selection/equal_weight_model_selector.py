@@ -48,15 +48,14 @@ class Problem(Annealer):
 class EqualWeightModelSelector:
 
     def __init__(self, execution_cost: float,
-                 assets: float, budget: float):
+                 assets: float):
         self._execution_cost = execution_cost
         self._assets = assets
-        self._budget = budget
 
     # df: index: [model_id, execution_start_at, symbol], columns: [position, ret]
     # df_market: index: [execution_start_at, symbol], columns: [ret]
     # df_model: index: [model_id], columns: [price]
-    def select_model(self, df=None, df_market=None, df_model=None, random_state=None):
+    def select_model(self, df=None, df_market=None, df_model=None, random_state=None, budget=None):
         df = df.copy()
 
         # 有効なものに限定
@@ -88,7 +87,7 @@ class EqualWeightModelSelector:
             ret_numpy=df_ret.values,
             price_numpy=df_model.loc[df_ret.columns, 'price'].values,
             assets=self._assets,
-            budget=self._budget,
+            budget=int(budget),
             random_state=random_state,
         )
         # TODO: anneal depends random.random

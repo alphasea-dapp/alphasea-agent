@@ -45,7 +45,8 @@ class TestExecutorStep(BaseHardhatTestCase):
             evaluation_periods=20,
             model_selector=AllModelSelector(),
             market_data_store=market_data_store,
-            symbol_white_list=['BTC']
+            symbol_white_list=['BTC'],
+            budget_rate=0.1,
         )
 
         model_id = 'model1'

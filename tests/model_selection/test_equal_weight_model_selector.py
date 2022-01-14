@@ -10,7 +10,6 @@ class TestEqualWeightModelSelector(TestCase):
         selector = EqualWeightModelSelector(
             execution_cost=0.01,
             assets=10000,
-            budget=100,
         )
 
         df = pd.DataFrame(
@@ -47,6 +46,7 @@ class TestEqualWeightModelSelector(TestCase):
             df=df,
             df_model=df_model,
             df_market=df_market,
+            budget=100,
             random_state=1,
         )
 
