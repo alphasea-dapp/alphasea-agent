@@ -14,7 +14,7 @@ from ..helpers import (
 from src.store.store import Store
 from src.store.event_indexer import EventIndexer
 from src.predictor.predictor import Predictor
-from src.prediction_format import ValidationError
+from src.types.exceptions import ValidationError
 
 
 class TestPredictorSubmitPrediction(BaseHardhatTestCase):
