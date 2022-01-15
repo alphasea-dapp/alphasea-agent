@@ -83,7 +83,7 @@ class Executor:
         day_seconds = 24 * 60 * 60
 
         dfs = []
-        for i in range(2, self._evaluation_periods):
+        for i in range(2, 2 + self._evaluation_periods):
             predictions = self._store.fetch_predictions(
                 tournament_id=self._tournament_id,
                 execution_start_at=execution_start_at - day_seconds * i

@@ -32,3 +32,7 @@ class TestPredictorValidateModelId(TestCase):
     def test_start_with_num_error(self):
         with self.assertRaises(ValidationError):
             validate_model_id('0aaa')
+
+    def test_character_error(self):
+        with self.assertRaises(ValidationError):
+            validate_model_id('-' * 4)
