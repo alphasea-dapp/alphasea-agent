@@ -6,7 +6,7 @@ from nacl.public import PublicKey, PrivateKey, SealedBox
 from nacl.secret import SecretBox
 import nacl.utils
 from .event_indexer import EventIndexer
-
+from ..logger import create_null_logger
 
 # thread safe
 # 暗号化などを隠蔽する
@@ -28,8 +28,8 @@ class Store:
         self._lock = threading.Lock()
         self._private_key = PrivateKey.generate()
         self._predictions = defaultdict(dict)
-        self._event_indexer = EventIndexer(w3, contract)
-        self._logger = logger
+        self._event_indexer = EventIndexer(w3, contract, logger=logger)
+        self._logger = create_null_logger() if logger is None else logger
 
     # read
 
@@ -109,6 +109,7 @@ class Store:
 
             tx_hash = self._contract.functions.createModels(params_list2).transact()
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
+            self._logger.debug('Store.create_models_if_not_exist done {} receipt {}'.format(params_list2, dict(receipt)))
             return {'receipt': dict(receipt)}
 
     def create_predictions(self, params_list):
@@ -145,6 +146,7 @@ class Store:
 
             tx_hash = self._contract.functions.createPredictions(params_list2).transact()
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
+            self._logger.debug('Store.create_predictions done {} receipt {}'.format(params_list2, dict(receipt)))
             return {'receipt': dict(receipt)}
 
     def create_purchases(self, params_list):
@@ -178,6 +180,7 @@ class Store:
                 params_list2
             ).transact({'value': sum_price})
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
+            self._logger.debug('Store.create_purchases done {} receipt {} sum_price {}'.format(params_list2, dict(receipt), sum_price))
             return {'receipt': dict(receipt), 'sum_price': sum_price}
 
     def ship_purchases(self, params_list):
@@ -211,6 +214,7 @@ class Store:
 
             tx_hash = self._contract.functions.shipPurchases(params_list2).transact()
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
+            self._logger.debug('Store.ship_purchases done {} receipt {}'.format(params_list2, dict(receipt)))
             return {'receipt': dict(receipt)}
 
     def publish_predictions(self, params_list):
@@ -230,6 +234,7 @@ class Store:
 
             tx_hash = self._contract.functions.publishPredictions(params_list2).transact()
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
+            self._logger.debug('Store.publish_predictions done {} receipt {}'.format(params_list2, dict(receipt)))
             return {'receipt': dict(receipt)}
 
     def _predictions_to_dict_list(self, predictions):

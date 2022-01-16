@@ -1,15 +1,15 @@
-from collections import defaultdict
 import pandas as pd
 from .utils import convert_keys_to_snake_case
-
+from ..logger import create_null_logger
 
 # thegraphのようなことをする
 # インターフェースはsnakecase
 
 class EventIndexer:
-    def __init__(self, w3, contract):
+    def __init__(self, w3, contract, logger=None):
         self._w3 = w3
         self._contract = contract
+        self._logger = create_null_logger() if logger is None else logger
 
         self._event_names = [
             'TournamentCreated',
@@ -94,6 +94,7 @@ class EventIndexer:
             )
 
         self._last_block_number = to_block
+        self._logger.debug('EventIndexer._fetch_events to_block {}'.format(to_block))
 
         # print(events)
 
