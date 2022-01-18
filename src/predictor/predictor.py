@@ -139,7 +139,7 @@ class Predictor:
                              t['shipping_time'] + shipping_time_buffer)
 
         publication_time_buffer = int(t['publication_time'] * 0.2)
-        publication_start_at = t['execution_start_at'] + t['execution_time'] + publication_time_buffer
+        publication_start_at = t['execution_start_at'] + t['execution_time'] + day_seconds + publication_time_buffer
 
         if (now - prediction_start_at) % day_seconds < t['prediction_time'] - prediction_time_buffer:
             self._step_prediction()

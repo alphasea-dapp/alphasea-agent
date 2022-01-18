@@ -59,4 +59,4 @@ def get_shipping_time_shift():
 
 
 def get_publication_time_shift():
-    return 65 * 60
+    return 24 * 60 * 60 + 65 * 60
