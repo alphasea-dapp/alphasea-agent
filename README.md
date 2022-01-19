@@ -104,7 +104,7 @@ environment variables (defined in docker-compose.yml)
 |ALPHASEA_EXECUTOR_SYMBOL_WHITE_LIST|モデル選択で使う銘柄ホワイトリスト|
 |ALPHASEA_EXECUTOR_EXECUTION_COST|モデル選択で使う取引コスト|
 |ALPHASEA_EXECUTOR_ASSETS_ETH|モデル選択で使う運用資産額(単位ETH)|
-|ALPHASEA_EXECUTOR_BUDGET_ETH|予測購入予算(単位ETH)。これをゼロにすると購入が発生しない|
+|ALPHASEA_EXECUTOR_BUDGET_RATE|予測購入予算(ウォレットETH残高に対する割合)。これをゼロにすると購入が発生しない|
 |ALPHASEA_EXECUTOR_EVALUATION_PERIODS|モデル選択で使う過去成績の数|
 
 ## API docs
@@ -151,9 +151,3 @@ docker-compose -f docker-compose-dev.yml run --rm dev_agent flake8 . --count --e
 github actionsでtestとlintを行っている。
 
 設定: .github/workflows/python-app.yml
-
-### TODO
-
-- [ ] 自分の予測を購入しない処理 (内部で0ETHで購入したことにする処理。予算ゼロでも有効)
-- [ ] モデル選択のコスト計算にガス代を入れる
-- [ ] budgetを割合にする
