@@ -22,6 +22,7 @@ executor_symbol_white_list = os.getenv('ALPHASEA_EXECUTOR_SYMBOL_WHITE_LIST').sp
 executor_budget_rate = float(os.getenv('ALPHASEA_EXECUTOR_BUDGET_RATE'))
 log_level = os.getenv('ALPHASEA_LOG_LEVEL')
 log_level_web3 = os.getenv('ALPHASEA_LOG_LEVEL_WEB3')
+chain_id = network_name_to_chain_id(os.getenv('ALPHASEA_NETWORK'))
 
 logger = create_logger(log_level)
 customize_uvicorn_log(log_level)
@@ -36,6 +37,11 @@ market_data_store = MarketDataStore(
 
 w3.eth.default_account = Account.from_key(get_wallet_private_key())
 
+if chain_id != w3.eth.chain_id:
+    raise Exception('specified chain_id({}) is different from remote chain_id({})'.format(
+        chain_id, w3.eth.chain_id
+    ))
+
 logger.info('chain_id {}'.format(w3.eth.chain_id))
 logger.info('account address {}'.format(w3.eth.default_account.address))
 logger.info('account balance {} ETH'.format(Web3.fromWei(w3.eth.get_balance(w3.eth.default_account.address), 'ether')))
@@ -47,7 +53,7 @@ contract = w3.eth.contract(
 store = Store(
     w3=w3,
     contract=contract,
-    chain_id=network_name_to_chain_id(os.getenv('ALPHASEA_NETWORK')),
+    chain_id=chain_id,
     logger=logger,
 )
 
