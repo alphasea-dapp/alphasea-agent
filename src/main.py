@@ -5,6 +5,8 @@ import os
 import time
 from web3 import Web3
 from web3.auto import w3
+from web3.eth import Account
+from .web3 import get_wallet_private_key, network_name_to_chain_id, get_hardhat_private_key
 from .store.store import Store
 from .executor.executor import Executor
 from .predictor.predictor import Predictor
@@ -20,6 +22,8 @@ executor_symbol_white_list = os.getenv('ALPHASEA_EXECUTOR_SYMBOL_WHITE_LIST').sp
 executor_budget_rate = float(os.getenv('ALPHASEA_EXECUTOR_BUDGET_RATE'))
 log_level = os.getenv('ALPHASEA_LOG_LEVEL')
 log_level_web3 = os.getenv('ALPHASEA_LOG_LEVEL_WEB3')
+network_name = os.getenv('ALPHASEA_NETWORK')
+chain_id = network_name_to_chain_id(network_name)
 
 logger = create_logger(log_level)
 customize_uvicorn_log(log_level)
@@ -32,11 +36,19 @@ market_data_store = MarketDataStore(
     logger=logger,
 )
 
-w3.eth.default_account = w3.eth.accounts[0]
+if network_name == 'hardhat':
+    w3.eth.default_account = Account.from_key(get_hardhat_private_key())
+else:
+    w3.eth.default_account = Account.from_key(get_wallet_private_key())
+
+if chain_id != w3.eth.chain_id:
+    raise Exception('specified chain_id({}) is different from remote chain_id({})'.format(
+        chain_id, w3.eth.chain_id
+    ))
 
 logger.info('chain_id {}'.format(w3.eth.chain_id))
-logger.info('account address {}'.format(w3.eth.default_account))
-logger.info('account balance {} ETH'.format(Web3.fromWei(w3.eth.get_balance(w3.eth.default_account), 'ether')))
+logger.info('account address {}'.format(w3.eth.default_account.address))
+logger.info('account balance {} ETH'.format(Web3.fromWei(w3.eth.get_balance(w3.eth.default_account.address), 'ether')))
 
 contract = w3.eth.contract(
     address=os.getenv('ALPHASEA_CONTRACT_ADDRESS'),
@@ -45,12 +57,13 @@ contract = w3.eth.contract(
 store = Store(
     w3=w3,
     contract=contract,
+    chain_id=chain_id,
     logger=logger,
 )
 
 model_selector = EqualWeightModelSelector(
     execution_cost=float(os.getenv('ALPHASEA_EXECUTOR_EXECUTION_COST')),
-    assets=Web3.toWei(os.getenv('ALPHASEA_EXECUTOR_ASSETS_ETH'), 'ether'),
+    assets=Web3.toWei(os.getenv('ALPHASEA_EXECUTOR_ASSETS'), 'ether'),
 )
 
 executor = Executor(
@@ -67,7 +80,7 @@ executor = Executor(
 predictor = Predictor(
     store=store,
     tournament_id=default_tournament_id,
-    price_min=Web3.toWei(os.getenv('ALPHASEA_PREDICTOR_PRICE_MIN_ETH'), 'ether'),
+    price_min=Web3.toWei(os.getenv('ALPHASEA_PREDICTOR_PRICE_MIN'), 'ether'),
     price_increase_rate=float(os.getenv('ALPHASEA_PREDICTOR_PRICE_INCREASE_RATE')),
     price_decrease_rate=float(os.getenv('ALPHASEA_PREDICTOR_PRICE_DECREASE_RATE')),
     logger=logger,

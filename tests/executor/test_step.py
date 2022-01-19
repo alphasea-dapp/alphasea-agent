@@ -13,6 +13,7 @@ from ..helpers import (
     get_shipping_time_shift,
     get_publication_time_shift,
     get_tournament_id,
+    get_chain_id,
     BaseHardhatTestCase
 )
 from src.store.store import Store
@@ -20,11 +21,14 @@ from src.store.event_indexer import EventIndexer
 from src.executor.executor import Executor
 from .all_model_selector import AllModelSelector
 
+day_seconds = 24 * 60 * 60
+
+
 class TestExecutorStep(BaseHardhatTestCase):
     def test_ok(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract)
+        store = Store(w3, contract, chain_id=get_chain_id())
 
         df_market = pd.DataFrame(
             [],
@@ -35,7 +39,7 @@ class TestExecutorStep(BaseHardhatTestCase):
 
         w3_purchaser = create_web3(account_index=1)
         contract_purhcaser = create_contract(w3_purchaser)
-        store_purchaser = Store(w3_purchaser, contract_purhcaser)
+        store_purchaser = Store(w3_purchaser, contract_purhcaser, chain_id=get_chain_id())
         event_indexer_purchaser = EventIndexer(w3_purchaser, contract_purhcaser)
         executor_time = None
         executor = Executor(
@@ -76,11 +80,12 @@ class TestExecutorStep(BaseHardhatTestCase):
                 break
 
             # publication
-            proceed_time(w3, execution_start_at + get_publication_time_shift())
-            store.publish_predictions([dict(
-                model_id=model_id,
-                execution_start_at=execution_start_at,
-            )])
+            if i > 0:
+                proceed_time(w3, execution_start_at - day_seconds + get_publication_time_shift())
+                store.publish_predictions([dict(
+                    model_id=model_id,
+                    execution_start_at=execution_start_at - day_seconds,
+                )])
 
         # purchase
         executor_time = execution_start_at + get_purchase_time_shift() + buffer_time
@@ -95,7 +100,7 @@ class TestExecutorStep(BaseHardhatTestCase):
         store.ship_purchases([dict(
             model_id=model_id,
             execution_start_at=execution_start_at,
-            purchaser=w3_purchaser.eth.default_account,
+            purchaser=w3_purchaser.eth.default_account.address,
         )])
 
         # get_blended_prediction
@@ -108,7 +113,7 @@ class TestExecutorStep(BaseHardhatTestCase):
     def test_empty(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract)
+        store = Store(w3, contract, chain_id=get_chain_id())
 
         df_market = pd.DataFrame(
             [],
@@ -119,7 +124,7 @@ class TestExecutorStep(BaseHardhatTestCase):
 
         w3_purchaser = create_web3(account_index=1)
         contract_purhcaser = create_contract(w3_purchaser)
-        store_purchaser = Store(w3_purchaser, contract_purhcaser)
+        store_purchaser = Store(w3_purchaser, contract_purhcaser, chain_id=get_chain_id())
         event_indexer_purchaser = EventIndexer(w3_purchaser, contract_purhcaser)
         executor_time = None
         executor = Executor(

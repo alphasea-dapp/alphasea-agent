@@ -9,6 +9,7 @@ from ..helpers import (
     get_shipping_time_shift,
     get_publication_time_shift,
     get_tournament_id,
+    get_chain_id,
     BaseHardhatTestCase
 )
 from src.store.store import Store
@@ -18,7 +19,7 @@ class TestStoreFetchTournament(BaseHardhatTestCase):
     def test_fetch_tournament(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract)
+        store = Store(w3, contract, chain_id=get_chain_id())
 
         tournament = store.fetch_tournament(get_tournament_id())
 

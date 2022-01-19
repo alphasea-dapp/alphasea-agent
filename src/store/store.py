@@ -22,7 +22,7 @@ from ..logger import create_null_logger
 
 
 class Store:
-    def __init__(self, w3, contract, logger=None):
+    def __init__(self, w3, contract, chain_id, logger=None):
         self._w3 = w3
         self._contract = contract
         self._lock = threading.Lock()
@@ -31,11 +31,13 @@ class Store:
         self._event_indexer = EventIndexer(w3, contract, logger=logger)
         self._logger = create_null_logger() if logger is None else logger
 
+        self._chain_id = chain_id
+
     # read
 
     def get_balance(self):
         with self._lock:
-            return self._w3.eth.get_balance(self._w3.eth.default_account)
+            return self._w3.eth.get_balance(self._default_account_address())
 
     def fetch_tournament(self, tournament_id: str):
         with self._lock:
@@ -62,7 +64,7 @@ class Store:
         with self._lock:
             models = self._event_indexer.fetch_models(
                 tournament_id=tournament_id,
-                owner=self._w3.eth.default_account
+                owner=self._default_account_address(),
             )
             predictions = self._event_indexer.fetch_predictions(
                 execution_start_at=execution_start_at
@@ -74,7 +76,7 @@ class Store:
     def fetch_purchases_to_ship(self, tournament_id: str, execution_start_at: int):
         with self._lock:
             my_models = self._event_indexer.fetch_models(
-                tournament_id=tournament_id, owner=self._w3.eth.default_account)
+                tournament_id=tournament_id, owner=self._default_account_address())
             purchases = self._event_indexer.fetch_purchases(execution_start_at=execution_start_at)
             purchases = purchases.loc[purchases['model_id'].isin(my_models['model_id'].unique())]
             purchases = purchases.loc[purchases['encrypted_content_key'].isna()]
@@ -107,7 +109,9 @@ class Store:
             if len(params_list2) == 0:
                 return {}
 
-            tx_hash = self._contract.functions.createModels(params_list2).transact()
+            tx_hash = self._contract.functions.createModels(params_list2).transact(
+                self._default_tx_options()
+            )
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             self._logger.debug('Store.create_models_if_not_exist done {} receipt {}'.format(params_list2, dict(receipt)))
             return {'receipt': dict(receipt)}
@@ -144,7 +148,9 @@ class Store:
             if len(params_list2) == 0:
                 return {}
 
-            tx_hash = self._contract.functions.createPredictions(params_list2).transact()
+            tx_hash = self._contract.functions.createPredictions(params_list2).transact(
+                self._default_tx_options()
+            )
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             self._logger.debug('Store.create_predictions done {} receipt {}'.format(params_list2, dict(receipt)))
             return {'receipt': dict(receipt)}
@@ -178,7 +184,10 @@ class Store:
 
             tx_hash = self._contract.functions.createPurchases(
                 params_list2
-            ).transact({'value': sum_price})
+            ).transact({
+                **self._default_tx_options(),
+                'value': sum_price,
+            })
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             self._logger.debug('Store.create_purchases done {} receipt {} sum_price {}'.format(params_list2, dict(receipt), sum_price))
             return {'receipt': dict(receipt), 'sum_price': sum_price}
@@ -212,7 +221,9 @@ class Store:
             if len(params_list2) == 0:
                 return {}
 
-            tx_hash = self._contract.functions.shipPurchases(params_list2).transact()
+            tx_hash = self._contract.functions.shipPurchases(params_list2).transact(
+                self._default_tx_options()
+            )
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             self._logger.debug('Store.ship_purchases done {} receipt {}'.format(params_list2, dict(receipt)))
             return {'receipt': dict(receipt)}
@@ -232,7 +243,9 @@ class Store:
             if len(params_list2) == 0:
                 return {}
 
-            tx_hash = self._contract.functions.publishPredictions(params_list2).transact()
+            tx_hash = self._contract.functions.publishPredictions(params_list2).transact(
+                self._default_tx_options()
+            )
             receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             self._logger.debug('Store.publish_predictions done {} receipt {}'.format(params_list2, dict(receipt)))
             return {'receipt': dict(receipt)}
@@ -252,7 +265,7 @@ class Store:
 
         # ship済みであればplaintextをくっつける
         my_purchases = self._event_indexer.fetch_purchases(
-            purchaser=self._w3.eth.default_account,
+            purchaser=self._default_account_address(),
             public_key=bytes(self._private_key.public_key),
         )
         my_purchases = my_purchases.loc[~my_purchases['encrypted_content_key'].isna()]
@@ -289,3 +302,16 @@ class Store:
             })
 
         return results
+
+    def _default_account_address(self):
+        account = self._w3.eth.default_account
+        if hasattr(account, 'address'):
+            return account.address
+        else:
+            return account
+
+    def _default_tx_options(self):
+        return {
+            'from': self._default_account_address(),
+            'chainId': self._chain_id,
+        }

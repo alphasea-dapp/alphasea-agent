@@ -3,6 +3,8 @@ from unittest import TestCase
 from web3 import Web3
 from web3._utils.module import attach_modules
 from .hardhat_module import HardhatModule
+from web3.eth import Account
+from src.web3 import network_name_to_chain_id, get_hardhat_private_key
 
 
 class BaseHardhatTestCase(TestCase):
@@ -21,7 +23,8 @@ def create_web3(account_index=0):
     }
     w3 = Web3(Web3.HTTPProvider(os.getenv('WEB3_PROVIDER_URI')))
     attach_modules(w3, external_modules)
-    w3.eth.default_account = w3.eth.accounts[account_index]
+    w3.eth.default_account = Account.from_key(get_hardhat_private_key(account_index))
+
     return w3
 
 
@@ -60,3 +63,7 @@ def get_shipping_time_shift():
 
 def get_publication_time_shift():
     return 24 * 60 * 60 + 65 * 60
+
+
+def get_chain_id():
+    return network_name_to_chain_id('hardhat')
