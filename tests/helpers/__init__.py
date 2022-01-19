@@ -46,23 +46,23 @@ def proceed_time(w3, timestamp):
 
 def get_future_execution_start_at_timestamp():
     future_midnight = 2000073600
-    return future_midnight + 15 * 60
+    return future_midnight + 30 * 60
 
 
 def get_prediction_time_shift():
-    return -13 * 60
+    return -30 * 60
 
 
 def get_purchase_time_shift():
-    return -9 * 60
+    return -22 * 60
 
 
 def get_shipping_time_shift():
-    return -5 * 60
+    return -14 * 60
 
 
 def get_publication_time_shift():
-    return 24 * 60 * 60 + 65 * 60
+    return 24 * 60 * 60 + 60 * 60
 
 
 def get_chain_id():

@@ -8,7 +8,7 @@ class TestFastapiSubmitPrediction(TestCase):
         client = TestClient(app)
         data = {
             'model_id': 'model1',
-            'execution_start_at': 15 * 60,
+            'execution_start_at': 30 * 60,
             'prediction_license': 'CC0-1.0',
             'content': """symbol,position
 BTC,0.1
