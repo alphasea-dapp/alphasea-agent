@@ -3,6 +3,7 @@ from fastapi import FastAPI, Response, Body
 from io import StringIO
 import os
 import time
+from ccxt_rate_limiter.rate_limiter_group import RateLimiterGroup
 from web3 import Web3
 from web3.auto import w3
 from web3.eth import Account
@@ -20,7 +21,6 @@ from .market_data_store.market_data_store import MarketDataStore
 from .model_selection.equal_weight_model_selector import EqualWeightModelSelector
 from .logger import create_logger, set_log_level_web3, customize_uvicorn_log
 
-
 default_tournament_id = os.getenv('ALPHASEA_DEFAULT_TOURNAMENT_ID')
 executor_evaluation_periods = int(os.getenv('ALPHASEA_EXECUTOR_EVALUATION_PERIODS'))
 executor_symbol_white_list = os.getenv('ALPHASEA_EXECUTOR_SYMBOL_WHITE_LIST').split(',')
@@ -29,6 +29,7 @@ log_level = os.getenv('ALPHASEA_LOG_LEVEL')
 log_level_web3 = os.getenv('ALPHASEA_LOG_LEVEL_WEB3')
 network_name = os.getenv('ALPHASEA_NETWORK')
 chain_id = network_name_to_chain_id(network_name)
+start_block_number = int(os.getenv('ALPHASEA_START_BLOCK_NUMBER', '1'))
 
 logger = create_logger(log_level)
 customize_uvicorn_log(log_level)
@@ -62,11 +63,22 @@ contract = w3.eth.contract(
     address=os.getenv('ALPHASEA_CONTRACT_ADDRESS'),
     abi=os.getenv('ALPHASEA_CONTRACT_ABI'),
 )
+rate_limiter = RateLimiterGroup(
+    limits=[
+        {
+            'tag': 'default',
+            'period_sec': 1,
+            'count': 1,
+        }
+    ]
+)
 store = Store(
     w3=w3,
     contract=contract,
     chain_id=chain_id,
     logger=logger,
+    rate_limiter=rate_limiter,
+    start_block_number=start_block_number,
 )
 
 model_selector = EqualWeightModelSelector(

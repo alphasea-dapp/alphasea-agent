@@ -2,14 +2,16 @@ import pandas as pd
 from .utils import convert_keys_to_snake_case
 from ..logger import create_null_logger
 
+
 # thegraphのようなことをする
 # インターフェースはsnakecase
 
 class EventIndexer:
-    def __init__(self, w3, contract, logger=None):
+    def __init__(self, w3, contract, logger=None, start_block_number=None, rate_limiter=None):
         self._w3 = w3
         self._contract = contract
         self._logger = create_null_logger() if logger is None else logger
+        self._rate_limiter = rate_limiter
 
         self._event_names = [
             'TournamentCreated',
@@ -20,7 +22,8 @@ class EventIndexer:
             'PurchaseShipped',
         ]
 
-        self._last_block_number = 0
+        self._last_block_number = 0 if start_block_number is None else start_block_number - 1
+        self._get_logs_limit = 1000
 
         # pandasの仕様
         # ここで追加したカラムはappendで整数を追加したときにobjectになる
@@ -38,8 +41,10 @@ class EventIndexer:
             'shipping_time'
         ])
         self._models = pd.DataFrame(columns=['model_id', 'tournament_id', 'owner'])
-        self._predictions = pd.DataFrame(columns=['model_id', 'execution_start_at', 'price', 'content_key', 'encrypted_content'])
-        self._purchases = pd.DataFrame(columns=['model_id', 'execution_start_at', 'purchaser', 'encrypted_content_key', 'public_key'])
+        self._predictions = pd.DataFrame(
+            columns=['model_id', 'execution_start_at', 'price', 'content_key', 'encrypted_content'])
+        self._purchases = pd.DataFrame(
+            columns=['model_id', 'execution_start_at', 'purchaser', 'encrypted_content_key', 'public_key'])
 
     def fetch_tournaments(self, tournament_id: str = None):
         self._fetch_events()
@@ -77,31 +82,31 @@ class EventIndexer:
         ])
 
     def _fetch_events(self):
-        events = []
+        while True:
+            events = []
 
-        to_block = self._w3.eth.block_number
-        if to_block <= self._last_block_number:
-            return
+            to_block = min(self._last_block_number + self._get_logs_limit, self._w3.eth.block_number)
+            if to_block <= self._last_block_number:
+                return
 
-        for event_name in self._event_names:
-            events += getattr(self._contract.events, event_name).getLogs(
-                fromBlock=self._last_block_number + 1,
-                # fromBlock=1,
-                toBlock=to_block,
-                argument_filters={
-                    'execution_start_at': 1,
-                },
-            )
+            for event_name in self._event_names:
+                if self._rate_limiter is not None:
+                    self._rate_limiter.rate_limit(tags=['default'])
+                events += getattr(self._contract.events, event_name).getLogs(
+                    fromBlock=self._last_block_number + 1,
+                    # fromBlock=1,
+                    toBlock=to_block,
+                )
 
-        self._last_block_number = to_block
-        self._logger.debug('EventIndexer._fetch_events to_block {}'.format(to_block))
+            self._last_block_number = to_block
+            self._logger.debug('EventIndexer._fetch_events to_block {}'.format(to_block))
 
-        # print(events)
+            # print(events)
 
-        events.sort(key=lambda x: x['blockNumber'])
+            events.sort(key=lambda x: x['blockNumber'])
 
-        for event in events:
-            self._process_event(event)
+            for event in events:
+                self._process_event(event)
 
     def _process_event(self, event):
         event_name = event['event']

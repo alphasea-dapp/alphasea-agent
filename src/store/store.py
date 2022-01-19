@@ -22,14 +22,21 @@ from ..logger import create_null_logger
 
 
 class Store:
-    def __init__(self, w3, contract, chain_id, logger=None):
+    def __init__(self, w3, contract, chain_id, logger=None,
+                 rate_limiter=None, start_block_number=None):
         self._w3 = w3
         self._contract = contract
         self._lock = threading.Lock()
         self._private_key = PrivateKey.generate()
         self._predictions = defaultdict(dict)
-        self._event_indexer = EventIndexer(w3, contract, logger=logger)
+        self._event_indexer = EventIndexer(
+            w3, contract,
+            logger=logger,
+            rate_limiter=rate_limiter,
+            start_block_number=start_block_number,
+        )
         self._logger = create_null_logger() if logger is None else logger
+        self._rate_limiter = rate_limiter
 
         self._chain_id = chain_id
 
@@ -37,6 +44,7 @@ class Store:
 
     def get_balance(self):
         with self._lock:
+            self._rate_limit()
             return self._w3.eth.get_balance(self._default_account_address())
 
     def fetch_tournament(self, tournament_id: str):
@@ -109,6 +117,7 @@ class Store:
             if len(params_list2) == 0:
                 return {}
 
+            self._rate_limit()
             tx_hash = self._contract.functions.createModels(params_list2).transact(
                 self._default_tx_options()
             )
@@ -148,6 +157,7 @@ class Store:
             if len(params_list2) == 0:
                 return {}
 
+            self._rate_limit()
             tx_hash = self._contract.functions.createPredictions(params_list2).transact(
                 self._default_tx_options()
             )
@@ -182,6 +192,7 @@ class Store:
             if len(params_list2) == 0:
                 return {}
 
+            self._rate_limit()
             tx_hash = self._contract.functions.createPurchases(
                 params_list2
             ).transact({
@@ -221,6 +232,7 @@ class Store:
             if len(params_list2) == 0:
                 return {}
 
+            self._rate_limit()
             tx_hash = self._contract.functions.shipPurchases(params_list2).transact(
                 self._default_tx_options()
             )
@@ -243,6 +255,7 @@ class Store:
             if len(params_list2) == 0:
                 return {}
 
+            self._rate_limit()
             tx_hash = self._contract.functions.publishPredictions(params_list2).transact(
                 self._default_tx_options()
             )
@@ -315,3 +328,7 @@ class Store:
             'from': self._default_account_address(),
             'chainId': self._chain_id,
         }
+
+    def _rate_limit(self):
+        if self._rate_limiter is not None:
+            self._rate_limiter.rate_limit(tags=['default'])
