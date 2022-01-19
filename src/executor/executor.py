@@ -4,6 +4,7 @@ import traceback
 import pandas as pd
 from ..prediction_format import validate_content, parse_content
 
+day_seconds = 24 * 60 * 60
 
 class Executor:
     def __init__(self, store=None, tournament_id=None, time_func=None, evaluation_periods=None,
@@ -80,8 +81,6 @@ class Executor:
             return
 
         # 過去予測を取得
-        day_seconds = 24 * 60 * 60
-
         dfs = []
         for i in range(2, 2 + self._evaluation_periods):
             predictions = self._store.fetch_predictions(
@@ -147,7 +146,6 @@ class Executor:
         }
 
     def _step(self):
-        day_seconds = 24 * 60 * 60
         now = int(self._time_func())
 
         if self._tournament is None:

@@ -4,6 +4,7 @@ import threading
 from ..prediction_format import validate_content, normalize_content
 from .model_id import validate_model_id
 
+day_seconds = 24 * 60 * 60
 
 class Predictor:
     def __init__(self, store=None, tournament_id=None, time_func=None,
@@ -37,7 +38,7 @@ class Predictor:
         if prediction_license != 'CC0-1.0':
             raise Exception('prediction_license must be CC0-1.0')
 
-        if execution_start_at % (24 * 60 * 60) != self._get_tournament()['execution_start_at']:
+        if execution_start_at % day_seconds != self._get_tournament()['execution_start_at']:
             raise Exception('invalid execution_start_at')
 
         validate_model_id(model_id)
@@ -125,7 +126,6 @@ class Predictor:
         return self._tournament
 
     def _step(self):
-        day_seconds = 24 * 60 * 60
         now = int(self._time_func())
 
         t = self._get_tournament()

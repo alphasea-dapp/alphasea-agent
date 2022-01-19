@@ -38,7 +38,7 @@ class TestPredictorStep(BaseHardhatTestCase):
         execution_start_at = get_future_execution_start_at_timestamp()
         content = b"""position,symbol
 0.1,BTC"""
-        buffer_time = 7 * 60
+        buffer_time = 1 * 60
 
         predictor.submit_prediction(
             model_id=model_id,

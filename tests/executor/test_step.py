@@ -57,7 +57,7 @@ class TestExecutorStep(BaseHardhatTestCase):
         execution_start_at = get_future_execution_start_at_timestamp()
         content = b"""position,symbol
 0.5,BTC"""
-        buffer_time = 7 * 60
+        buffer_time = 1 * 60
 
         days = 22
         for i in range(days):
@@ -141,7 +141,7 @@ class TestExecutorStep(BaseHardhatTestCase):
         execution_start_at = get_future_execution_start_at_timestamp()
         content = b"""position,symbol
 0.5,BTC"""
-        buffer_time = 7 * 60
+        buffer_time = 1 * 60
 
         # predict
         proceed_time(w3, execution_start_at + get_prediction_time_shift())
