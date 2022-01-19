@@ -11,6 +11,7 @@ from ..helpers import (
     get_shipping_time_shift,
     get_publication_time_shift,
     get_tournament_id,
+    get_chain_id,
     BaseHardhatTestCase
 )
 from src.store.store import Store
@@ -23,7 +24,7 @@ class TestPredictorStep(BaseHardhatTestCase):
     def test_ok(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract)
+        store = Store(w3, contract, chain_id=get_chain_id())
         event_indexer = EventIndexer(w3, contract)
         predictor_time = None
         predictor = Predictor(
@@ -62,7 +63,7 @@ class TestPredictorStep(BaseHardhatTestCase):
         # purchase
         w3_purchaser = create_web3(account_index=1)
         contract_purhcaser = create_contract(w3_purchaser)
-        store_purchaser = Store(w3_purchaser, contract_purhcaser)
+        store_purchaser = Store(w3_purchaser, contract_purhcaser, chain_id=get_chain_id())
 
         proceed_time(w3, execution_start_at + get_purchase_time_shift())
         store_purchaser.create_purchases([dict(

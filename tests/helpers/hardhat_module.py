@@ -15,6 +15,8 @@ class HardhatModule(Module):
         return self._evm_mine()
 
     def set_balance(self, address, balance):
+        if hasattr(address, 'address'):
+            address = address.address
         return self._hardhat_setBalance(address, hex(balance))
 
     _hardhat_reset = Method(RPCEndpoint("hardhat_reset"))

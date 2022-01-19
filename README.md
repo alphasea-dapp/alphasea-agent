@@ -100,10 +100,10 @@ environment variables (defined in docker-compose.yml)
 |ALPHASEA_DEFAULT_TOURNAMENT_ID| 'crypto_daily' で固定 |
 |ALPHASEA_PREDICTOR_PRICE_INCREASE_RATE| 前回の予測が一つ以上購入された場合に値上げする割合。0.1で10%値上げ |
 |ALPHASEA_PREDICTOR_PRICE_DECREASE_RATE| 前回の予測が一個も購入されなかった場合に値下げする割合。0.1で10%値下げ |
-|ALPHASEA_PREDICTOR_PRICE_MIN_ETH|価格の最小値(単位ETH)|
+|ALPHASEA_PREDICTOR_PRICE_MIN|価格の最小値(単位ETH or MATIC)|
 |ALPHASEA_EXECUTOR_SYMBOL_WHITE_LIST|モデル選択で使う銘柄ホワイトリスト|
 |ALPHASEA_EXECUTOR_EXECUTION_COST|モデル選択で使う取引コスト|
-|ALPHASEA_EXECUTOR_ASSETS_ETH|モデル選択で使う運用資産額(単位ETH)|
+|ALPHASEA_EXECUTOR_ASSETS|モデル選択で使う運用資産額(単位ETH or MATIC)|
 |ALPHASEA_EXECUTOR_BUDGET_RATE|予測購入予算(ウォレットETH残高に対する割合)。これをゼロにすると購入が発生しない|
 |ALPHASEA_EXECUTOR_EVALUATION_PERIODS|モデル選択で使う過去成績の数|
 

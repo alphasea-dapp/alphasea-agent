@@ -9,6 +9,7 @@ from ..helpers import (
     get_shipping_time_shift,
     get_publication_time_shift,
     get_tournament_id,
+    get_chain_id,
     BaseHardhatTestCase
 )
 from src.store.store import Store
@@ -20,7 +21,7 @@ class TestPredictorCalcPredictionPrice(BaseHardhatTestCase):
     def test_no_prediction(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract)
+        store = Store(w3, contract, chain_id=get_chain_id())
         predictor = Predictor(
             store=store,
             price_min=100,
@@ -39,7 +40,7 @@ class TestPredictorCalcPredictionPrice(BaseHardhatTestCase):
     def test_not_purchased_prediction(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract)
+        store = Store(w3, contract, chain_id=get_chain_id())
         predictor = Predictor(
             store=store,
             price_min=100,
@@ -71,7 +72,7 @@ class TestPredictorCalcPredictionPrice(BaseHardhatTestCase):
     def test_not_purchased_prediction_min_price(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract)
+        store = Store(w3, contract, chain_id=get_chain_id())
         predictor = Predictor(
             store=store,
             price_min=100,
@@ -103,11 +104,11 @@ class TestPredictorCalcPredictionPrice(BaseHardhatTestCase):
     def test_purchased_prediction(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract)
+        store = Store(w3, contract, chain_id=get_chain_id())
 
         w3_purchaser = create_web3(account_index=1)
         contract_purhcaser = create_contract(w3_purchaser)
-        store_purchaser = Store(w3_purchaser, contract_purhcaser)
+        store_purchaser = Store(w3_purchaser, contract_purhcaser, chain_id=get_chain_id())
 
         predictor = Predictor(
             store=store,

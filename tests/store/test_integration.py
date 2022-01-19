@@ -10,6 +10,7 @@ from ..helpers import (
     get_shipping_time_shift,
     get_publication_time_shift,
     get_tournament_id,
+    get_chain_id,
     BaseHardhatTestCase
 )
 from src.store.store import Store
@@ -19,11 +20,11 @@ class TestStoreIntegration(BaseHardhatTestCase):
     def test_integration(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract)
+        store = Store(w3, contract, chain_id=get_chain_id())
 
         w3_purchaser = create_web3(account_index=1)
         contract_purhcaser = create_contract(w3_purchaser)
-        store_purchaser = Store(w3_purchaser, contract_purhcaser)
+        store_purchaser = Store(w3_purchaser, contract_purhcaser, chain_id=get_chain_id())
 
         execution_start_at = get_future_execution_start_at_timestamp()
         content = 'abc'.encode()
@@ -79,7 +80,7 @@ class TestStoreIntegration(BaseHardhatTestCase):
         store.ship_purchases([dict(
             model_id=model_id,
             execution_start_at=execution_start_at,
-            purchaser=w3_purchaser.eth.default_account,
+            purchaser=w3_purchaser.eth.default_account.address,
         )])
 
         # check shipped purchase
