@@ -1,6 +1,6 @@
 version: "3"
 services:
-  ropsten_agent:
+  mumbai_agent:
     build:
       context: .
     ports:
