@@ -10,6 +10,14 @@ def network_name_to_chain_id(name):
     }[name]
 
 
+def network_name_to_currency(name):
+    return {
+        'matic': 'MATIC',
+        'mumbai': 'MATIC',
+        'hardhat': 'ETH',
+    }[name]
+
+
 def _get_keyfile_path():
     path = os.path.join(os.path.dirname(__file__), '../../data/keystore')
     return os.path.join(path, sorted(os.listdir(path))[0])

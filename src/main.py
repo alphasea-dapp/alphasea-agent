@@ -6,7 +6,12 @@ import time
 from web3 import Web3
 from web3.auto import w3
 from web3.eth import Account
-from .web3 import get_wallet_private_key, network_name_to_chain_id, get_hardhat_private_key
+from .web3 import (
+    get_wallet_private_key,
+    network_name_to_chain_id,
+    network_name_to_currency,
+    get_hardhat_private_key,
+)
 from .store.store import Store
 from .executor.executor import Executor
 from .predictor.predictor import Predictor
@@ -48,7 +53,10 @@ if chain_id != w3.eth.chain_id:
 
 logger.info('chain_id {}'.format(w3.eth.chain_id))
 logger.info('account address {}'.format(w3.eth.default_account.address))
-logger.info('account balance {} ETH'.format(Web3.fromWei(w3.eth.get_balance(w3.eth.default_account.address), 'ether')))
+logger.info('account balance {} {}'.format(
+    Web3.fromWei(w3.eth.get_balance(w3.eth.default_account.address), 'ether'),
+    network_name_to_currency(network_name)
+))
 
 contract = w3.eth.contract(
     address=os.getenv('ALPHASEA_CONTRACT_ADDRESS'),
