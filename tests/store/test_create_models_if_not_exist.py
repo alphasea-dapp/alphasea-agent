@@ -10,6 +10,7 @@ from ..helpers import (
     get_publication_time_shift,
     get_tournament_id,
     get_chain_id,
+    create_store,
     BaseHardhatTestCase
 )
 from src.store.store import Store
@@ -20,7 +21,7 @@ class TestStoreCreateModelsIfNotExist(BaseHardhatTestCase):
     def test_not_exist(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract, chain_id=get_chain_id())
+        store = create_store(w3, contract)
         event_indexer = EventIndexer(w3, contract)
 
         store.create_models_if_not_exist([{
@@ -40,7 +41,7 @@ class TestStoreCreateModelsIfNotExist(BaseHardhatTestCase):
     def test_exist(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract, chain_id=get_chain_id())
+        store = create_store(w3, contract)
         event_indexer = EventIndexer(w3, contract)
 
         store.create_models_if_not_exist([{
@@ -65,6 +66,6 @@ class TestStoreCreateModelsIfNotExist(BaseHardhatTestCase):
     def test_empty(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract, chain_id=get_chain_id())
+        store = create_store(w3, contract)
         result = store.create_models_if_not_exist([])
         self.assertEqual(result, {})

@@ -39,7 +39,7 @@ class Predictor:
             raise Exception('prediction_license must be CC0-1.0')
 
         if execution_start_at % day_seconds != self._get_tournament()['execution_start_at']:
-            raise Exception('invalid execution_start_at')
+            raise Exception('invalid execution_start_at {} {}'.format(execution_start_at, self._get_tournament()['execution_start_at']))
 
         validate_model_id(model_id)
 

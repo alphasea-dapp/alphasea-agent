@@ -10,6 +10,7 @@ from ..helpers import (
     get_publication_time_shift,
     get_tournament_id,
     get_chain_id,
+    create_store,
     BaseHardhatTestCase
 )
 from src.store.store import Store
@@ -22,7 +23,7 @@ class TestPredictorSubmitPrediction(BaseHardhatTestCase):
     def test_ok(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract, chain_id=get_chain_id())
+        store = create_store(w3, contract)
         predictor = Predictor(
             store=store,
             tournament_id=get_tournament_id(),
@@ -55,7 +56,7 @@ XRP,0.3"""
     def test_validation_error(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract, chain_id=get_chain_id())
+        store = create_store(w3, contract)
         predictor = Predictor(
             store=store,
             tournament_id=get_tournament_id(),
@@ -76,7 +77,7 @@ XRP,0.3"""
     def test_license_error(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract, chain_id=get_chain_id())
+        store = create_store(w3, contract)
         predictor = Predictor(
             store=store,
             tournament_id=get_tournament_id(),
@@ -98,7 +99,7 @@ XRP,0.3"""
     def test_execution_start_at_error(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract, chain_id=get_chain_id())
+        store = create_store(w3, contract)
         predictor = Predictor(
             store=store,
             tournament_id=get_tournament_id(),
@@ -119,7 +120,7 @@ XRP,0.3"""
     def test_model_id_error(self):
         w3 = create_web3()
         contract = create_contract(w3)
-        store = Store(w3, contract, chain_id=get_chain_id())
+        store = create_store(w3, contract)
         predictor = Predictor(
             store=store,
             tournament_id=get_tournament_id(),

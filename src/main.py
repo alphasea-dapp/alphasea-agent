@@ -4,6 +4,7 @@ from io import StringIO
 import os
 import time
 from ccxt_rate_limiter.rate_limiter_group import RateLimiterGroup
+from redis_namespace import StrictRedis
 from web3 import Web3
 from web3.auto import w3
 from web3.eth import Account
@@ -72,6 +73,10 @@ rate_limiter = RateLimiterGroup(
         }
     ]
 )
+redis_client = StrictRedis.from_url(
+    os.getenv('REDIS_URL'),
+    namespace='store:'
+)
 store = Store(
     w3=w3,
     contract=contract,
@@ -79,6 +84,7 @@ store = Store(
     logger=logger,
     rate_limiter=rate_limiter,
     start_block_number=start_block_number,
+    redis_client=redis_client,
 )
 
 model_selector = EqualWeightModelSelector(

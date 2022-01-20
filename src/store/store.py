@@ -1,10 +1,10 @@
 from web3 import Web3
 import threading
-from collections import defaultdict
 import pandas as pd
 from nacl.public import PublicKey, PrivateKey, SealedBox
 from nacl.secret import SecretBox
 import nacl.utils
+import pickle
 from .event_indexer import EventIndexer
 from ..logger import create_null_logger
 
@@ -21,14 +21,17 @@ from ..logger import create_null_logger
 # (publishされたものとshipされたものが違う場合に対応するため)
 
 
+def _prediction_info_key(model_id, execution_start_at):
+    return 'prediction_info:{}:{}'.format(model_id, execution_start_at)
+
+
 class Store:
     def __init__(self, w3, contract, chain_id, logger=None,
-                 rate_limiter=None, start_block_number=None):
+                 rate_limiter=None, start_block_number=None,
+                 redis_client=None):
         self._w3 = w3
         self._contract = contract
         self._lock = threading.Lock()
-        self._private_key = PrivateKey.generate()
-        self._predictions = defaultdict(dict)
         self._event_indexer = EventIndexer(
             w3, contract,
             logger=logger,
@@ -37,8 +40,29 @@ class Store:
         )
         self._logger = create_null_logger() if logger is None else logger
         self._rate_limiter = rate_limiter
-
+        self._redis_client = redis_client
         self._chain_id = chain_id
+
+        private_key_key = 'private_key'
+        private_key = self._redis_client.get(private_key_key)
+        if private_key is None:
+            self._private_key = PrivateKey.generate()
+            self._redis_client.set(private_key_key, bytes(self._private_key))
+        else:
+            self._private_key = PrivateKey(private_key)
+
+    # redis
+
+    def _get_prediction_info(self, model_id, execution_start_at):
+        key = _prediction_info_key(model_id, execution_start_at)
+        value = self._redis_client.get(key)
+        if value is None:
+            return None
+        return pickle.loads(value)
+
+    def _set_prediction_info(self, model_id, execution_start_at, info):
+        key = _prediction_info_key(model_id, execution_start_at)
+        self._redis_client.set(key, pickle.dumps(info))
 
     # read
 
@@ -142,10 +166,14 @@ class Store:
                 box = SecretBox(content_key)
                 encrypted_content = box.encrypt(content)
 
-                self._predictions[model_id][execution_start_at] = {
-                    'content_key_generator': content_key_generator,
-                    'content_key': content_key,
-                }
+                self._set_prediction_info(
+                    model_id=model_id,
+                    execution_start_at=execution_start_at,
+                    info={
+                        'content_key_generator': content_key_generator,
+                        'content_key': content_key,
+                    }
+                )
 
                 params_list2.append({
                     'modelId': model_id,
@@ -217,7 +245,11 @@ class Store:
                     purchaser=purchaser,
                 ).iloc[0]
 
-                content_key = self._predictions[model_id][execution_start_at]['content_key']
+                prediction_info = self._get_prediction_info(
+                    model_id=model_id,
+                    execution_start_at=execution_start_at
+                )
+                content_key = prediction_info['content_key']
 
                 sealed_box = SealedBox(PublicKey(purchase['public_key']))
                 encrypted_content_key = sealed_box.encrypt(content_key)
@@ -244,8 +276,11 @@ class Store:
         with self._lock:
             params_list2 = []
             for params in params_list:
-                content_key_generator = self._predictions[params['model_id']][params['execution_start_at']][
-                    'content_key_generator']
+                prediction_info = self._get_prediction_info(
+                    model_id=params['model_id'],
+                    execution_start_at=params['execution_start_at']
+                )
+                content_key_generator = prediction_info['content_key_generator']
                 params_list2.append({
                     'modelId': params['model_id'],
                     'executionStartAt': params['execution_start_at'],
@@ -271,8 +306,12 @@ class Store:
         for idx in predictions.index:
             model_id = predictions.loc[idx, 'model_id']
             execution_start_at = predictions.loc[idx, 'execution_start_at']
-            if execution_start_at in self._predictions[model_id]:
-                content_key = self._predictions[model_id][execution_start_at]['content_key']
+            prediction_info = self._get_prediction_info(
+                model_id=model_id,
+                execution_start_at=execution_start_at
+            )
+            if prediction_info is not None:
+                content_key = prediction_info['content_key']
                 predictions.loc[idx, 'content_key'] = content_key
                 predictions.loc[idx, 'locally_stored'] = True
 

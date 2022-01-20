@@ -5,6 +5,8 @@ from web3._utils.module import attach_modules
 from .hardhat_module import HardhatModule
 from web3.eth import Account
 from src.web3 import network_name_to_chain_id, get_hardhat_private_key
+from redis_namespace import StrictRedis
+from src.store.store import Store
 
 
 class BaseHardhatTestCase(TestCase):
@@ -32,6 +34,23 @@ def create_contract(w3):
     return w3.eth.contract(
         address=os.getenv('ALPHASEA_CONTRACT_ADDRESS'),
         abi=os.getenv('ALPHASEA_CONTRACT_ABI'),
+    )
+
+
+_namespace_idx = 1
+
+
+def create_store(w3, contract):
+    global _namespace_idx
+    redis_client = StrictRedis.from_url(
+        os.getenv('REDIS_URL'),
+        namespace='test{}:'.format(_namespace_idx)
+    )
+    _namespace_idx += 1
+    return Store(
+        w3, contract,
+        chain_id=get_chain_id(),
+        redis_client=redis_client
     )
 
 

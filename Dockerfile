@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir \
     numpy==1.19.5 \
     pandas==1.1.5 \
     PyNaCl==1.4.0 \
+    "git+https://github.com/bevy/redis-namespace.git@38c01cd636e0a85c4a3061683f49a01816fb4c91" \
     scikit-learn==0.24 \
     simanneal==0.5.0 \
     stringcase==1.2.0 \
