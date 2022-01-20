@@ -14,17 +14,17 @@ HTTP APIインターフェース
 
 エージェントの動き
 
-- 提出された予測をethスマートコントラクトに投稿
-- 購入された予測をethスマートコントラクト経由で購入者に届ける
+- 提出された予測をスマートコントラクトに投稿
+- 購入された予測をスマートコントラクト経由で購入者に届ける
 - モデル選択アルゴリズムで購入する予測を選び購入する
 
 ## agentの動かし方
 
 ### 秘密鍵を用意
 
-agentの稼働にはETHウォレットが必要です。
+agentの稼働にはMATICウォレットが必要です。
 
-agentで使う用のETHウォレットの秘密鍵を生成します。
+agentで使う用のMATICウォレットの秘密鍵を生成します。
 パスワードはdefault_wallet_password内に記載されたalphasea_passwordのままでも、
 変えても良いと思います。
 
@@ -48,14 +48,14 @@ docker run --rm -v "$(pwd)/data/keystore:/root/.ethereum/keystore:ro" ethereum/c
 docker run --rm -v "$(pwd)/default_wallet_password:/default_wallet_password:ro" -v "$(pwd)/data/keystore:/root/.ethereum/keystore:ro" -it ethereum/client-go console --password /default_wallet_password --unlock 0
 ```
 
-### ウォレットにETHを入れる
+### ウォレットにMATICを入れる
 
-alphasea-agentは動作にETHが必要です(gas代や予測購入費用)。
+alphasea-agentは動作にMATICが必要です(gas代や予測購入費用)。
 testnetの場合はfaucetサイトで入れてください。
 mainnetの場合は送金で入れてください。
 アドレスは前項の手順で見れると思います。
 
-### agentとgethを起動
+### agentを起動
 
 mainnet (未実装)
 
@@ -63,10 +63,10 @@ mainnet (未実装)
 docker-compose up -d
 ```
 
-testnet (ropsten)
+testnet (mumbai)
 
 ```bash
-docker-compose -f docker-compose-ropsten.yml up -d
+docker-compose -f docker-compose-mumbai.yml up -d
 ```
 
 ## agentの使い方
@@ -94,9 +94,9 @@ environment variables (defined in docker-compose.yml)
 
 |name|description|
 |:-:|:-:|
-|WEB3_PROVIDER_URI|eth rpc endpoint|
-|ALPHASEA_CONTRACT_ADDRESS|alphasea eth contract address|
-|ALPHASEA_CONTRACT_ABI|alphasea eth contract ABI|
+|WEB3_PROVIDER_URI|polygon rpc endpoint|
+|ALPHASEA_CONTRACT_ADDRESS|alphasea polygon contract address|
+|ALPHASEA_CONTRACT_ABI|alphasea polygon contract ABI|
 |ALPHASEA_DEFAULT_TOURNAMENT_ID| 'crypto_daily' で固定 |
 |ALPHASEA_PREDICTOR_PRICE_INCREASE_RATE| 前回の予測が一つ以上購入された場合に値上げする割合。0.1で10%値上げ |
 |ALPHASEA_PREDICTOR_PRICE_DECREASE_RATE| 前回の予測が一個も購入されなかった場合に値下げする割合。0.1で10%値下げ |
@@ -104,7 +104,7 @@ environment variables (defined in docker-compose.yml)
 |ALPHASEA_EXECUTOR_SYMBOL_WHITE_LIST|モデル選択で使う銘柄ホワイトリスト|
 |ALPHASEA_EXECUTOR_EXECUTION_COST|モデル選択で使う取引コスト|
 |ALPHASEA_EXECUTOR_ASSETS|モデル選択で使う運用資産額(単位ETH or MATIC)|
-|ALPHASEA_EXECUTOR_BUDGET_RATE|予測購入予算(ウォレットETH残高に対する割合)。これをゼロにすると購入が発生しない|
+|ALPHASEA_EXECUTOR_BUDGET_RATE|予測購入予算(ウォレット残高に対する割合)。これをゼロにすると購入が発生しない|
 |ALPHASEA_EXECUTOR_EVALUATION_PERIODS|モデル選択で使う過去成績の数|
 
 ## API docs
