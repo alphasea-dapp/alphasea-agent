@@ -40,11 +40,11 @@ def create_contract(w3):
 _namespace_idx = 1
 
 
-def create_store(w3, contract):
+def create_store(w3, contract, redis_namespace=None):
     global _namespace_idx
     redis_client = StrictRedis.from_url(
         os.getenv('REDIS_URL'),
-        namespace='test{}:'.format(_namespace_idx)
+        namespace='test_store{}:'.format(_namespace_idx) if redis_namespace is None else redis_namespace
     )
     _namespace_idx += 1
     return Store(
