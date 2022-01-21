@@ -82,10 +82,12 @@ class EventIndexer:
         ])
 
     def _fetch_events(self):
+        current_block_number = self._w3.eth.block_number
+
         while True:
             events = []
 
-            to_block = min(self._last_block_number + self._get_logs_limit, self._w3.eth.block_number)
+            to_block = min(self._last_block_number + self._get_logs_limit, current_block_number)
             if to_block <= self._last_block_number:
                 return
 
