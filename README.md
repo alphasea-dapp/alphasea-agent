@@ -97,7 +97,6 @@ environment variables (defined in docker-compose.yml)
 |WEB3_PROVIDER_URI|polygon rpc endpoint|
 |ALPHASEA_CONTRACT_ADDRESS|alphasea polygon contract address|
 |ALPHASEA_CONTRACT_ABI|alphasea polygon contract ABI|
-|ALPHASEA_DEFAULT_TOURNAMENT_ID| 'crypto_daily' で固定 |
 |ALPHASEA_PREDICTOR_PRICE_INCREASE_RATE| 前回の予測が一つ以上購入された場合に値上げする割合。0.1で10%値上げ |
 |ALPHASEA_PREDICTOR_PRICE_DECREASE_RATE| 前回の予測が一個も購入されなかった場合に値下げする割合。0.1で10%値下げ |
 |ALPHASEA_PREDICTOR_PRICE_MIN|価格の最小値(単位ETH or MATIC)|
