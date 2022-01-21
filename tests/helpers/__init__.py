@@ -55,7 +55,7 @@ def create_store(w3, contract, redis_namespace=None):
 
 
 def get_tournament_id():
-    return 'crypto_daily'
+    return 'crypto_daily_0030'
 
 
 def proceed_time(w3, timestamp):
@@ -81,7 +81,7 @@ def get_shipping_time_shift():
 
 
 def get_publication_time_shift():
-    return 24 * 60 * 60 + 60 * 60
+    return 24 * 60 * 60 + 2 * 60 * 60
 
 
 def get_chain_id():

@@ -25,13 +25,13 @@ class TestStoreFetchTournament(BaseHardhatTestCase):
         tournament = store.fetch_tournament(get_tournament_id())
 
         self.assertEqual(tournament, {
-            'tournament_id': 'crypto_daily',
+            'tournament_id': 'crypto_daily_0030',
             'execution_start_at': 30 * 60,
             'prediction_time': 8 * 60,
             'purchase_time': 8 * 60,
             'shipping_time': 8 * 60,
             'execution_preparation_time': 6 * 60,
-            'execution_time': 60 * 60,
+            'execution_time': 2 * 60 * 60,
             'publication_time': 15 * 60,
             'description': 'https://github.com/alphasea-dapp/alphasea/tree/master/tournaments/crypto_daily.md',
         })
