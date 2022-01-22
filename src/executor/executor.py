@@ -3,6 +3,7 @@ import threading
 import traceback
 import pandas as pd
 from ..prediction_format import validate_content, parse_content
+from ..logger import create_null_logger
 
 day_seconds = 24 * 60 * 60
 
@@ -16,6 +17,7 @@ class Executor:
         self._tournament_id = tournament_id
         self._time_func = time.time if time_func is None else time_func
         self._interval_sec = 15
+        self._logger = create_null_logger() if logger is None else logger
 
         self._evaluation_periods = evaluation_periods
         self._model_selector = model_selector
@@ -57,10 +59,8 @@ class Executor:
                 df = df.reset_index()
                 dfs.append(df)
             except Exception as e:
-                # self._logger.error(e)
-                # self._logger.error(traceback.format_exc())
-                print(e)
-                print(traceback.format_exc())
+                self._logger.error(e)
+                self._logger.error(traceback.format_exc())
 
         if len(dfs) == 0:
             return empty_result
@@ -73,7 +73,11 @@ class Executor:
 
     def _run(self):
         while not self._thread_terminated:
-            self._step()
+            try:
+                self._step()
+            except Exception as e:
+                self._logger.error(e)
+                self._logger.error(traceback.format_exc())
             time.sleep(self._interval_sec)
 
     def _step_purchase(self, execution_start_at):
@@ -96,7 +100,8 @@ class Executor:
                     df = df.reset_index().set_index(['model_id', 'execution_start_at', 'symbol'])
                     dfs.append(df)
                 except Exception as e:
-                    print(e)
+                    self._logger.error(e)
+                    self._logger.error(traceback.format_exc())
 
         if len(dfs) == 0:
             return

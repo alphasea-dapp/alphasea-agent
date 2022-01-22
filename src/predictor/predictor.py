@@ -1,10 +1,13 @@
 import time
 from collections import defaultdict
 import threading
+import traceback
 from ..prediction_format import validate_content, normalize_content
 from .model_id import validate_model_id
+from ..logger import create_null_logger
 
 day_seconds = 24 * 60 * 60
+
 
 class Predictor:
     def __init__(self, store=None, tournament_id=None, time_func=None,
@@ -17,6 +20,7 @@ class Predictor:
         self._time_func = time.time if time_func is None else time_func
         self._lock = threading.Lock()
         self._interval_sec = 15
+        self._logger = create_null_logger() if logger is None else logger
 
         self._price_min = price_min
         self._price_increase_rate = price_increase_rate
@@ -39,7 +43,8 @@ class Predictor:
             raise Exception('prediction_license must be CC0-1.0')
 
         if execution_start_at % day_seconds != self._get_tournament()['execution_start_at']:
-            raise Exception('invalid execution_start_at {} {}'.format(execution_start_at, self._get_tournament()['execution_start_at']))
+            raise Exception('invalid execution_start_at {} {}'.format(execution_start_at,
+                                                                      self._get_tournament()['execution_start_at']))
 
         validate_model_id(model_id)
 
@@ -58,7 +63,8 @@ class Predictor:
             try:
                 self._step()
             except Exception as e:
-                print(e)
+                self._logger.error(e)
+                self._logger.error(traceback.format_exc())
             time.sleep(self._interval_sec)
 
     def _step_prediction(self):
@@ -162,4 +168,3 @@ class Predictor:
                 return int(prediction['price'] * (1 + self._price_increase_rate))
             else:
                 return max(self._price_min, int(prediction['price'] * (1 - self._price_decrease_rate)))
-
