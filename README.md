@@ -142,7 +142,7 @@ mumbai testnetを使ったテスト。
 mumbai用のMATICの入ったウォレットが必要。
 
 ```bash
-docker-compose -f docker-compose-dev.yml run --rm dev_agent python -m unittest discover -s testnet_tests
+docker-compose -f docker-compose-mumbai.yml run --rm mumbai_agent python -m unittest discover -s testnet_tests
 ```
 
 ### lint

@@ -7,7 +7,7 @@ class TestFastapiGetBlendedPrediction(TestCase):
     def test_ok(self):
         client = TestClient(app)
         response = client.get('/blended_prediction.csv', params={
-            'tournament_id': 'crypto_daily_0030',
+            'tournament_id': 'crypto_daily',
             'execution_start_at': 1,
         })
         self.assertEqual(response.status_code, 200)

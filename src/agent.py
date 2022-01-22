@@ -65,33 +65,32 @@ class Agent:
 
         tournaments = {}
 
-        for i in range(0, 24, 2):
-            tournament_id = 'crypto_daily_{:02}30'.format(i)
+        tournament_id = 'crypto_daily'
 
-            executor = Executor(
-                store=store,
-                tournament_id=tournament_id,
-                evaluation_periods=executor_evaluation_periods,
-                model_selector=model_selector,
-                market_data_store=market_data_store,
-                symbol_white_list=executor_symbol_white_list,
-                budget_rate=executor_budget_rate,
-                logger=logger,
-            )
+        executor = Executor(
+            store=store,
+            tournament_id=tournament_id,
+            evaluation_periods=executor_evaluation_periods,
+            model_selector=model_selector,
+            market_data_store=market_data_store,
+            symbol_white_list=executor_symbol_white_list,
+            budget_rate=executor_budget_rate,
+            logger=logger,
+        )
 
-            predictor = Predictor(
-                store=store,
-                tournament_id=tournament_id,
-                price_min=Web3.toWei(os.getenv('ALPHASEA_PREDICTOR_PRICE_MIN'), 'ether'),
-                price_increase_rate=float(os.getenv('ALPHASEA_PREDICTOR_PRICE_INCREASE_RATE')),
-                price_decrease_rate=float(os.getenv('ALPHASEA_PREDICTOR_PRICE_DECREASE_RATE')),
-                logger=logger,
-            )
+        predictor = Predictor(
+            store=store,
+            tournament_id=tournament_id,
+            price_min=Web3.toWei(os.getenv('ALPHASEA_PREDICTOR_PRICE_MIN'), 'ether'),
+            price_increase_rate=float(os.getenv('ALPHASEA_PREDICTOR_PRICE_INCREASE_RATE')),
+            price_decrease_rate=float(os.getenv('ALPHASEA_PREDICTOR_PRICE_DECREASE_RATE')),
+            logger=logger,
+        )
 
-            tournaments[tournament_id] = SimpleNamespace(
-                executor=executor,
-                predictor=predictor,
-            )
+        tournaments[tournament_id] = SimpleNamespace(
+            executor=executor,
+            predictor=predictor,
+        )
 
         self.tournaments = tournaments
 

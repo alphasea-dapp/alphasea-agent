@@ -42,7 +42,8 @@ class Predictor:
         if prediction_license != 'CC0-1.0':
             raise Exception('prediction_license must be CC0-1.0')
 
-        if execution_start_at % day_seconds != self._get_tournament()['execution_start_at']:
+        t = self._get_tournament()
+        if execution_start_at % t['execution_time'] != t['execution_start_at']:
             raise Exception('invalid execution_start_at {} {}'.format(execution_start_at,
                                                                       self._get_tournament()['execution_start_at']))
 
@@ -147,13 +148,15 @@ class Predictor:
         publication_time_buffer = int(t['publication_time'] * 0.2)
         publication_start_at = t['execution_start_at'] + t['execution_time'] + day_seconds + publication_time_buffer
 
-        if (now - prediction_start_at) % day_seconds < t['prediction_time'] - prediction_time_buffer:
+        interval = t['execution_time']
+
+        if (now - prediction_start_at) % interval < t['prediction_time'] - prediction_time_buffer:
             self._step_prediction()
-        elif (now - shipping_start_at) % day_seconds < t['shipping_time'] - shipping_time_buffer:
-            execution_start_at = ((now - shipping_start_at) // day_seconds) * day_seconds + t['execution_start_at']
+        elif (now - shipping_start_at) % interval < t['shipping_time'] - shipping_time_buffer:
+            execution_start_at = ((now - shipping_start_at) // interval) * interval + t['execution_start_at']
             self._step_shipping(execution_start_at)
-        elif (now - publication_start_at) % day_seconds < t['publication_time'] - publication_time_buffer:
-            execution_start_at = ((now - publication_start_at) // day_seconds) * day_seconds + t['execution_start_at']
+        elif (now - publication_start_at) % interval < t['publication_time'] - publication_time_buffer:
+            execution_start_at = ((now - publication_start_at) // interval) * interval + t['execution_start_at']
             self._step_publication(execution_start_at)
 
     def _calc_prediction_price(self, model_id: str, execution_start_at: int):

@@ -1,6 +1,7 @@
 from unittest import TestCase
 import random
 import string
+import os
 from web3.eth import Account
 from src.web3 import create_w3, get_wallet_private_key, get_account_address
 from src.store.event_indexer import EventIndexer
@@ -9,15 +10,15 @@ from tests.helpers import (
 )
 
 network_name = 'mumbai'
-start_block_number = 24123420
-contract_address = '0x530F00c8877deE52b30fc87BcAdE597fc6e269eb'
+start_block_number = int(os.getenv('ALPHASEA_START_BLOCK_NUMBER'))
+contract_address = os.getenv('ALPHASEA_CONTRACT_ADDRESS')
 
 
 class TestnetTestStoreCreateModelsIfNotExist(TestCase):
     def test_not_exist(self):
         w3 = create_w3(
             network_name=network_name,
-            web3_provider_uri='https://rpc-mumbai.maticvigil.com',
+            web3_provider_uri=os.getenv('WEB3_PROVIDER_URI'),
         )
         w3.eth.default_account = Account.from_key(get_wallet_private_key())
         print(get_account_address(w3.eth.default_account))

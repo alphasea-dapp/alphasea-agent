@@ -161,6 +161,8 @@ class Executor:
         purchase_start_at = (t['execution_start_at'] - t['execution_preparation_time'] -
                                t['shipping_time'] - t['purchase_time'] + purchase_time_buffer)
 
-        if (now - purchase_start_at) % day_seconds < t['purchase_time'] - purchase_time_buffer:
-            execution_start_at = ((now - purchase_start_at) // day_seconds) * day_seconds + t['execution_start_at']
+        interval = t['execution_time']
+
+        if (now - purchase_start_at) % interval < t['purchase_time'] - purchase_time_buffer:
+            execution_start_at = ((now - purchase_start_at) // interval) * interval + t['execution_start_at']
             self._step_purchase(execution_start_at)

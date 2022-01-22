@@ -62,7 +62,7 @@ def get_logger():
 
 
 def get_tournament_id():
-    return 'crypto_daily_0030'
+    return 'crypto_daily'
 
 
 def proceed_time(w3, timestamp):

@@ -25,7 +25,7 @@ class TestStoreFetchTournament(BaseHardhatTestCase):
         tournament = store.fetch_tournament(get_tournament_id())
 
         self.assertEqual(tournament, {
-            'tournament_id': 'crypto_daily_0030',
+            'tournament_id': 'crypto_daily',
             'execution_start_at': 30 * 60,
             'prediction_time': 8 * 60,
             'purchase_time': 8 * 60,

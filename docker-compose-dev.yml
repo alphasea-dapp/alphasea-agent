@@ -11,12 +11,9 @@ services:
       - dev_redis
     volumes:
       - ./.git:/app/.git:ro
-      - ./data/keystore:/app/data/keystore:ro
-      - ./default_wallet_password:/app/default_wallet_password:ro
       - ./scripts:/app/scripts:ro
       - ./src:/app/src:ro
       - ./tests:/app/tests:ro
-      - ./testnet_tests:/app/testnet_tests:ro
       - ./tmp:/tmp/alphasea-agent
     working_dir: /app
     environment:
