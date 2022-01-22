@@ -133,6 +133,7 @@ class Store:
 
                 models = self._event_indexer.fetch_models(model_id=model_id)
                 if models.shape[0] > 0:
+                    self._logger.debug('Store.create_models_if_not_exist model({}) already exists. skipped'.format(model_id))
                     continue
 
                 params_list2.append({
@@ -142,6 +143,7 @@ class Store:
                 })
 
             if len(params_list2) == 0:
+                self._logger.debug('Store.create_models_if_not_exist no new models. skipped')
                 return {}
 
             self._rate_limit()
