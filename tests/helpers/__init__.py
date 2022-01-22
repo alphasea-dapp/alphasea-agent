@@ -1,4 +1,6 @@
 import os
+import random
+import string
 from unittest import TestCase
 from web3 import Web3
 from web3._utils.module import attach_modules
@@ -37,17 +39,13 @@ def create_contract(w3, contract_address=None):
     )
 
 
-_namespace_idx = 1
-
-
 def create_store(w3, contract, redis_namespace=None, network_name=None,
                  start_block_number=None):
-    global _namespace_idx
+
     redis_client = StrictRedis.from_url(
         os.getenv('REDIS_URL'),
-        namespace='test_store{}:'.format(_namespace_idx) if redis_namespace is None else redis_namespace
+        namespace='test_store{}:'.format(random.choices(string.ascii_lowercase, k=32)) if redis_namespace is None else redis_namespace
     )
-    _namespace_idx += 1
     return Store(
         w3, contract,
         chain_id=get_chain_id(network_name=network_name),
