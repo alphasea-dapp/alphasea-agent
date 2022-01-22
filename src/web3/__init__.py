@@ -1,5 +1,15 @@
 import os
 from eth_keyfile import extract_key_from_keyfile
+from web3.auto import w3
+from web3.auto.gethdev import w3 as w3_dev
+
+
+def create_w3(network_name):
+    return {
+        'matic': w3,
+        'mumbai': w3_dev,
+        'hardhat': w3,
+    }[network_name]
 
 
 def network_name_to_chain_id(name):

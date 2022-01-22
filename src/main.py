@@ -3,13 +3,13 @@ from fastapi import FastAPI, Response, Body
 from io import StringIO
 import os
 from web3 import Web3
-from web3.auto import w3
 from web3.eth import Account
 from .web3 import (
     get_wallet_private_key,
     network_name_to_chain_id,
     network_name_to_currency,
     get_hardhat_private_key,
+    create_w3,
 )
 from .logger import create_logger, set_log_level_web3, customize_uvicorn_log
 from .agent import Agent
@@ -22,6 +22,8 @@ chain_id = network_name_to_chain_id(network_name)
 logger = create_logger(log_level)
 customize_uvicorn_log(log_level)
 set_log_level_web3(log_level_web3)
+
+w3 = create_w3(network_name=network_name)
 
 if network_name == 'hardhat':
     w3.eth.default_account = Account.from_key(get_hardhat_private_key())
