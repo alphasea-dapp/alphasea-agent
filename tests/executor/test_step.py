@@ -20,6 +20,7 @@ from ..helpers import (
 from src.store.store import Store
 from src.store.event_indexer import EventIndexer
 from src.executor.executor import Executor
+from src.web3 import get_account_address
 from .all_model_selector import AllModelSelector
 
 day_seconds = 24 * 60 * 60
@@ -101,7 +102,7 @@ class TestExecutorStep(BaseHardhatTestCase):
         store.ship_purchases([dict(
             model_id=model_id,
             execution_start_at=execution_start_at,
-            purchaser=w3_purchaser.eth.default_account.address,
+            purchaser=get_account_address(w3_purchaser.eth.default_account),
         )])
 
         # get_blended_prediction

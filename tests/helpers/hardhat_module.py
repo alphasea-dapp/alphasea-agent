@@ -1,7 +1,7 @@
 from web3.module import Module, Method
 from web3.types import RPCEndpoint
 from web3.method import default_root_munger
-
+from src.web3 import get_account_address
 
 class HardhatModule(Module):
 
@@ -15,9 +15,10 @@ class HardhatModule(Module):
         return self._evm_mine()
 
     def set_balance(self, address, balance):
-        if hasattr(address, 'address'):
-            address = address.address
-        return self._hardhat_setBalance(address, hex(balance))
+        return self._hardhat_setBalance(
+            get_account_address(address),
+            hex(balance)
+        )
 
     _hardhat_reset = Method(RPCEndpoint("hardhat_reset"))
 

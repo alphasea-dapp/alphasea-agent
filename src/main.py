@@ -8,8 +8,8 @@ from .web3 import (
     get_wallet_private_key,
     network_name_to_chain_id,
     network_name_to_currency,
-    get_hardhat_private_key,
     create_w3,
+    get_account_address,
 )
 from .logger import create_logger, set_log_level_web3, customize_uvicorn_log
 from .agent import Agent
@@ -29,7 +29,7 @@ w3 = create_w3(
 )
 
 if network_name == 'hardhat':
-    w3.eth.default_account = Account.from_key(get_hardhat_private_key())
+    w3.eth.default_account = w3.eth.accounts[0]
 else:
     w3.eth.default_account = Account.from_key(get_wallet_private_key())
 
@@ -39,9 +39,9 @@ if chain_id != w3.eth.chain_id:
     ))
 
 logger.info('chain_id {}'.format(w3.eth.chain_id))
-logger.info('account address {}'.format(w3.eth.default_account.address))
+logger.info('account address {}'.format(get_account_address(w3.eth.default_account)))
 logger.info('account balance {} {}'.format(
-    Web3.fromWei(w3.eth.get_balance(w3.eth.default_account.address), 'ether'),
+    Web3.fromWei(w3.eth.get_balance(get_account_address(w3.eth.default_account)), 'ether'),
     network_name_to_currency(network_name)
 ))
 

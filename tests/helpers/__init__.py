@@ -3,10 +3,10 @@ from unittest import TestCase
 from web3 import Web3
 from web3._utils.module import attach_modules
 from .hardhat_module import HardhatModule
-from web3.eth import Account
-from src.web3 import network_name_to_chain_id, get_hardhat_private_key
+from src.web3 import network_name_to_chain_id
 from redis_namespace import StrictRedis
 from src.store.store import Store
+from src.logger import create_logger
 
 
 class BaseHardhatTestCase(TestCase):
@@ -25,14 +25,14 @@ def create_web3(account_index=0):
     }
     w3 = Web3(Web3.HTTPProvider(os.getenv('WEB3_PROVIDER_URI')))
     attach_modules(w3, external_modules)
-    w3.eth.default_account = Account.from_key(get_hardhat_private_key(account_index))
+    w3.eth.default_account = w3.eth.accounts[account_index]
 
     return w3
 
 
-def create_contract(w3):
+def create_contract(w3, contract_address=None):
     return w3.eth.contract(
-        address=os.getenv('ALPHASEA_CONTRACT_ADDRESS'),
+        address=os.getenv('ALPHASEA_CONTRACT_ADDRESS') if contract_address is None else contract_address,
         abi=os.getenv('ALPHASEA_CONTRACT_ABI'),
     )
 
@@ -40,7 +40,8 @@ def create_contract(w3):
 _namespace_idx = 1
 
 
-def create_store(w3, contract, redis_namespace=None):
+def create_store(w3, contract, redis_namespace=None, network_name=None,
+                 start_block_number=None):
     global _namespace_idx
     redis_client = StrictRedis.from_url(
         os.getenv('REDIS_URL'),
@@ -49,9 +50,15 @@ def create_store(w3, contract, redis_namespace=None):
     _namespace_idx += 1
     return Store(
         w3, contract,
-        chain_id=get_chain_id(),
-        redis_client=redis_client
+        chain_id=get_chain_id(network_name=network_name),
+        redis_client=redis_client,
+        logger=get_logger(),
+        start_block_number=start_block_number,
     )
+
+
+def get_logger():
+    return create_logger('debug')
 
 
 def get_tournament_id():
@@ -84,5 +91,5 @@ def get_publication_time_shift():
     return 24 * 60 * 60 + 2 * 60 * 60
 
 
-def get_chain_id():
-    return network_name_to_chain_id('hardhat')
+def get_chain_id(network_name=None):
+    return network_name_to_chain_id('hardhat' if network_name is None else network_name)

@@ -5,8 +5,10 @@ from nacl.public import PublicKey, PrivateKey, SealedBox
 from nacl.secret import SecretBox
 import nacl.utils
 import pickle
+import time
 from .event_indexer import EventIndexer
 from ..logger import create_null_logger
+from ..web3 import get_account_address
 
 # thread safe
 # 暗号化などを隠蔽する
@@ -146,11 +148,10 @@ class Store:
                 self._logger.debug('Store.create_models_if_not_exist no new models. skipped')
                 return {}
 
-            self._rate_limit()
-            tx_hash = self._contract.functions.createModels(params_list2).transact(
+            receipt = self._transact(
+                self._contract.functions.createModels(params_list2),
                 self._default_tx_options()
             )
-            receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             self._logger.debug('Store.create_models_if_not_exist done {} receipt {}'.format(params_list2, dict(receipt)))
             return {'receipt': dict(receipt)}
 
@@ -192,11 +193,10 @@ class Store:
             if len(params_list2) == 0:
                 return {}
 
-            self._rate_limit()
-            tx_hash = self._contract.functions.createPredictions(params_list2).transact(
+            receipt = self._transact(
+                self._contract.functions.createPredictions(params_list2),
                 self._default_tx_options()
             )
-            receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             self._logger.debug('Store.create_predictions done {} receipt {}'.format(params_list2, dict(receipt)))
             return {'receipt': dict(receipt)}
 
@@ -229,14 +229,13 @@ class Store:
             if len(params_list2) == 0:
                 return {}
 
-            self._rate_limit()
-            tx_hash = self._contract.functions.createPurchases(
-                params_list2
-            ).transact({
-                **self._default_tx_options(),
-                'value': sum_price,
-            })
-            receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
+            receipt = self._transact(
+                self._contract.functions.createPurchases(params_list2),
+                {
+                    **self._default_tx_options(),
+                    'value': sum_price,
+                }
+            )
             self._logger.debug('Store.create_purchases done {} receipt {} sum_price {}'.format(params_list2, dict(receipt), sum_price))
             return {'receipt': dict(receipt), 'sum_price': sum_price}
 
@@ -275,11 +274,10 @@ class Store:
             if len(params_list2) == 0:
                 return {}
 
-            self._rate_limit()
-            tx_hash = self._contract.functions.shipPurchases(params_list2).transact(
+            receipt = self._transact(
+                self._contract.functions.shipPurchases(params_list2),
                 self._default_tx_options()
             )
-            receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             self._logger.debug('Store.ship_purchases done {} receipt {}'.format(params_list2, dict(receipt)))
             return {'receipt': dict(receipt)}
 
@@ -303,11 +301,10 @@ class Store:
             if len(params_list2) == 0:
                 return {}
 
-            self._rate_limit()
-            tx_hash = self._contract.functions.publishPredictions(params_list2).transact(
+            receipt = self._transact(
+                self._contract.functions.publishPredictions(params_list2),
                 self._default_tx_options()
             )
-            receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
             self._logger.debug('Store.publish_predictions done {} receipt {}'.format(params_list2, dict(receipt)))
             return {'receipt': dict(receipt)}
 
@@ -369,11 +366,7 @@ class Store:
         return results
 
     def _default_account_address(self):
-        account = self._w3.eth.default_account
-        if hasattr(account, 'address'):
-            return account.address
-        else:
-            return account
+        return get_account_address(self._w3.eth.default_account)
 
     def _default_tx_options(self):
         return {
@@ -384,3 +377,27 @@ class Store:
     def _rate_limit(self):
         if self._rate_limiter is not None:
             self._rate_limiter.rate_limit(tags=['default'])
+
+    def _transact(self, func, options):
+        self._rate_limit()
+
+        if hasattr(self._w3.eth.default_account, 'key'):
+            # local private key (not work with hardhat https://github.com/nomiclabs/hardhat/issues/1664)
+            nonce = self._w3.eth.get_transaction_count(self._default_account_address())
+            tx = func.buildTransaction({ **options, 'nonce': nonce })
+            signed_tx = self._w3.eth.account.sign_transaction(tx, private_key=self._w3.eth.default_account.key)
+            self._w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            tx_hash = signed_tx.hash
+        else:
+            # remote private key
+            tx_hash = func.transact(options)
+
+        receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
+
+        # wait for block number
+        self._rate_limit()
+        while self._w3.eth.block_number < receipt['blockNumber']:
+            time.sleep(1)
+            self._rate_limit()
+
+        return receipt

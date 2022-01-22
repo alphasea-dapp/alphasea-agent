@@ -47,9 +47,8 @@ def get_wallet_private_key():
     )
 
 
-def get_hardhat_private_key(account_index=0):
-    hardhat_private_keys = [
-        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
-        '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d'
-    ]
-    return hardhat_private_keys[account_index]
+def get_account_address(account):
+    if hasattr(account, 'address'):
+        return account.address
+    else:
+        return account

@@ -2,19 +2,28 @@ import logging
 from logging import getLogger, StreamHandler
 from types import SimpleNamespace
 
+logger_initialized = False  # TODO: refactor
+
 
 def create_logger(log_level):
-    level = getattr(logging, log_level.upper())
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    global logger_initialized
 
-    logger = getLogger('alphasea-agent')
-    logger.setLevel(level)
-    logger.propagate = False
+    if logger_initialized:
+        return getLogger('alphasea-agent')
+    else:
+        level = getattr(logging, log_level.upper())
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    err = StreamHandler()
-    err.setLevel(level)
-    err.setFormatter(formatter)
-    logger.addHandler(err)
+        logger = getLogger('alphasea-agent')
+        logger.setLevel(level)
+        logger.propagate = False
+
+        err = StreamHandler()
+        err.setLevel(level)
+        err.setFormatter(formatter)
+        logger.addHandler(err)
+
+        logger_initialized = True
 
     return logger
 

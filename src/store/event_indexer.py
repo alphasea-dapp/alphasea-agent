@@ -82,6 +82,8 @@ class EventIndexer:
         ])
 
     def _fetch_events(self):
+        if self._rate_limiter is not None:
+            self._rate_limiter.rate_limit(tags=['default'])
         current_block_number = self._w3.eth.block_number
 
         while True:

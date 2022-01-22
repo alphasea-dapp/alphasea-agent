@@ -138,6 +138,13 @@ alphaseaリポジトリでnpx hardhat nodeを立ち上げてから実行。
 docker-compose -f docker-compose-dev.yml run --rm dev_agent bash scripts/test.sh
 ```
 
+mumbai testnetを使ったテスト。
+mumbai用のMATICの入ったウォレットが必要。
+
+```bash
+docker-compose -f docker-compose-dev.yml run --rm dev_agent python -m unittest discover -s testnet_tests
+```
+
 ### lint
 
 ```bash
