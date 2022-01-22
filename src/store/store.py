@@ -63,6 +63,7 @@ class Store:
     def _set_prediction_info(self, model_id, execution_start_at, info):
         key = _prediction_info_key(model_id, execution_start_at)
         self._redis_client.set(key, pickle.dumps(info))
+        self._redis_client.expireat(key, execution_start_at + 2 * 24 * 60 * 60)
 
     # read
 
