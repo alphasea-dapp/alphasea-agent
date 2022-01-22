@@ -1,15 +1,16 @@
 import os
 from eth_keyfile import extract_key_from_keyfile
-from web3.auto import w3
-from web3.auto.gethdev import w3 as w3_dev
+from web3 import Web3
+from web3.middleware import geth_poa_middleware
 
 
-def create_w3(network_name):
-    return {
-        'matic': w3,
-        'mumbai': w3_dev,
-        'hardhat': w3,
-    }[network_name]
+def create_w3(network_name, web3_provider_uri):
+    w3 = Web3(Web3.HTTPProvider(web3_provider_uri))
+
+    if network_name in ['mumbai']:
+        w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+
+    return w3
 
 
 def network_name_to_chain_id(name):

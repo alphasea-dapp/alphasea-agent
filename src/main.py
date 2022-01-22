@@ -23,7 +23,10 @@ logger = create_logger(log_level)
 customize_uvicorn_log(log_level)
 set_log_level_web3(log_level_web3)
 
-w3 = create_w3(network_name=network_name)
+w3 = create_w3(
+    network_name=network_name,
+    web3_provider_uri=os.getenv('WEB3_PROVIDER_URI'),
+)
 
 if network_name == 'hardhat':
     w3.eth.default_account = Account.from_key(get_hardhat_private_key())
