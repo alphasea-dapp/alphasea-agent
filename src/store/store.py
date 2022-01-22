@@ -121,6 +121,8 @@ class Store:
     # write
 
     def create_models_if_not_exist(self, params_list):
+        self._logger.debug('Store.create_models_if_not_exist called {}'.format(params_list))
+
         with self._lock:
             params_list2 = []
             for params in params_list:
@@ -150,6 +152,8 @@ class Store:
             return {'receipt': dict(receipt)}
 
     def create_predictions(self, params_list):
+        self._logger.debug('Store.create_predictions called {}'.format(params_list))
+
         with self._lock:
             params_list2 = []
             for params in params_list:
@@ -194,6 +198,8 @@ class Store:
             return {'receipt': dict(receipt)}
 
     def create_purchases(self, params_list):
+        self._logger.debug('Store.create_purchases called {}'.format(params_list))
+
         with self._lock:
             params_list2 = []
             sum_price = None
@@ -232,6 +238,8 @@ class Store:
             return {'receipt': dict(receipt), 'sum_price': sum_price}
 
     def ship_purchases(self, params_list):
+        self._logger.debug('Store.ship_purchases called {}'.format(params_list))
+
         with self._lock:
             params_list2 = []
             for params in params_list:
@@ -273,6 +281,8 @@ class Store:
             return {'receipt': dict(receipt)}
 
     def publish_predictions(self, params_list):
+        self._logger.debug('Store.publish_predictions called {}'.format(params_list))
+
         with self._lock:
             params_list2 = []
             for params in params_list:
