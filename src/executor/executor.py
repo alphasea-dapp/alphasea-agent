@@ -104,9 +104,12 @@ class Executor:
                     self._logger.error(traceback.format_exc())
 
         if len(dfs) == 0:
-            return
-
-        df = pd.concat(dfs)
+            df = pd.DataFrame(
+                [],
+                columns=['model_id', 'execution_start_at', 'symbol', 'position']
+            ).set_index(['model_id', 'execution_start_at', 'symbol'])
+        else:
+            df = pd.concat(dfs)
         df = df.sort_index()
 
         # 今ラウンドで売りに出ている予測取得

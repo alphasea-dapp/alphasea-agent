@@ -132,7 +132,8 @@ class TestExecutorStep(BaseHardhatTestCase):
             evaluation_periods=20,
             model_selector=AllModelSelector(),
             market_data_store=market_data_store,
-            symbol_white_list=['BTC']
+            symbol_white_list=['BTC'],
+            budget_rate=0.1,
         )
 
         model_id = 'model1'
@@ -161,9 +162,19 @@ class TestExecutorStep(BaseHardhatTestCase):
         executor._step()
 
         purchases = event_indexer_purchaser.fetch_purchases()
-        self.assertEqual(purchases.shape[0], 0)
+        self.assertTrue(pd.isna(purchases.iloc[0]['encrypted_content_key']))
+
+        # shipping
+        proceed_time(w3, execution_start_at + get_shipping_time_shift())
+        store.ship_purchases([dict(
+            model_id=model_id,
+            execution_start_at=execution_start_at,
+            purchaser=get_account_address(w3_purchaser.eth.default_account),
+        )])
 
         # get_blended_prediction
         blended_prediction = executor.get_blended_prediction(execution_start_at=execution_start_at)
-        expected = pd.DataFrame([], columns=['symbol', 'position']).set_index('symbol')
+        expected = pd.DataFrame([
+            ['BTC', 0.5],
+        ], columns=['symbol', 'position']).set_index('symbol')
         assert_frame_equal(blended_prediction, expected)
