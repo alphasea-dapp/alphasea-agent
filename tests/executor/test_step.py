@@ -15,10 +15,9 @@ from ..helpers import (
     get_tournament_id,
     get_chain_id,
     create_store,
+    create_event_indexer,
     BaseHardhatTestCase
 )
-from src.store.store import Store
-from src.store.event_indexer import EventIndexer
 from src.executor.executor import Executor
 from src.web3 import get_account_address
 from .all_model_selector import AllModelSelector
@@ -42,7 +41,7 @@ class TestExecutorStep(BaseHardhatTestCase):
         w3_purchaser = create_web3(account_index=1)
         contract_purhcaser = create_contract(w3_purchaser)
         store_purchaser = create_store(w3_purchaser, contract_purhcaser)
-        event_indexer_purchaser = EventIndexer(w3_purchaser, contract_purhcaser)
+        event_indexer_purchaser = create_event_indexer(w3_purchaser, contract_purhcaser)
         executor_time = None
         executor = Executor(
             store=store_purchaser,
@@ -127,7 +126,7 @@ class TestExecutorStep(BaseHardhatTestCase):
         w3_purchaser = create_web3(account_index=1)
         contract_purhcaser = create_contract(w3_purchaser)
         store_purchaser = create_store(w3_purchaser, contract_purhcaser)
-        event_indexer_purchaser = EventIndexer(w3_purchaser, contract_purhcaser)
+        event_indexer_purchaser = create_event_indexer(w3_purchaser, contract_purhcaser)
         executor_time = None
         executor = Executor(
             store=store_purchaser,

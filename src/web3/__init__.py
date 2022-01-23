@@ -3,6 +3,10 @@ import time
 from eth_keyfile import extract_key_from_keyfile
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
+from web3.exceptions import (
+    MismatchedABI,
+)
+from web3._utils.events import get_event_data
 
 
 def create_w3(network_name, web3_provider_uri):
@@ -92,39 +96,29 @@ def transact(func, options, rate_limit_func=None, gas_buffer=None):
 
     return receipt
 
-def transact(func, options, rate_limit_func=None, gas_buffer=None):
-    w3 = func.web3
-    default_account = w3.eth.default_account
 
-    if rate_limit_func is None:
-        rate_limit_func = lambda: ...
+def get_events(contract, from_block, to_block):
+    w3 = contract.web3
 
-    rate_limit_func()
-    if hasattr(default_account, 'key'):
-        # local private key (not work with hardhat https://github.com/nomiclabs/hardhat/issues/1664)
-        nonce = w3.eth.get_transaction_count(get_account_address(default_account))
-        tx = func.buildTransaction({**options, 'nonce': nonce})
-        if gas_buffer is not None:
-            tx = func.buildTransaction({
-                **options,
-                'nonce': nonce,
-                'gas': w3.eth.estimate_gas(tx) + gas_buffer,
-            })
-        signed_tx = w3.eth.account.sign_transaction(tx, private_key=default_account.key)
-        w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-        tx_hash = signed_tx.hash
-    else:
-        # remote private key
-        tx_hash = func.transact(options)
+    logs = w3.eth.get_logs({
+        "fromBlock": from_block,
+        "toBlock": to_block,
+        "address": contract.address,
+        "topics": []
+    })
 
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-    if receipt['status'] == 0:
-        raise Exception('transaction failed {}'.format(dict(receipt)))
+    events = []
 
-    # wait for block number
-    rate_limit_func()
-    while w3.eth.block_number < receipt['blockNumber']:
-        time.sleep(1)
-        rate_limit_func()
+    for log in logs:
+        for contract_event in contract.events:
+            abi = contract_event._get_event_abi()
 
-    return receipt
+            try:
+                ev = get_event_data(w3.codec, abi, log)
+                events.append(ev)
+            except MismatchedABI:
+                ...
+
+    events.sort(key=lambda x: x['blockNumber'])
+
+    return events

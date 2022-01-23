@@ -11,10 +11,9 @@ from ..helpers import (
     get_tournament_id,
     get_chain_id,
     create_store,
+    create_event_indexer,
     BaseHardhatTestCase
 )
-from src.store.store import Store
-from src.store.event_indexer import EventIndexer
 
 
 class TestStoreCreatePurchases(BaseHardhatTestCase):
@@ -26,7 +25,7 @@ class TestStoreCreatePurchases(BaseHardhatTestCase):
         w3_purchaser = create_web3(account_index=1)
         contract_purhcaser = create_contract(w3_purchaser)
         store_purchaser = create_store(w3_purchaser, contract_purhcaser)
-        event_indexer_purchaser = EventIndexer(w3_purchaser, contract_purhcaser)
+        event_indexer_purchaser = create_event_indexer(w3_purchaser, contract_purhcaser)
 
         execution_start_at = get_future_execution_start_at_timestamp()
         content = 'abc'.encode()

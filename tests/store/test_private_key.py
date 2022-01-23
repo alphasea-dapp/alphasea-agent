@@ -1,9 +1,8 @@
-import random
-import string
 from ..helpers import (
     create_web3,
     create_contract,
     create_store,
+    generate_redis_namespace,
     BaseHardhatTestCase
 )
 
@@ -13,7 +12,7 @@ class TestStorePrivateKey(BaseHardhatTestCase):
         w3 = create_web3()
         contract = create_contract(w3)
 
-        redis_namespace = 'test_' + ''.join(random.choices(string.ascii_lowercase, k=32))
+        redis_namespace = generate_redis_namespace()
         store = create_store(w3, contract, redis_namespace=redis_namespace)
         orig_public_key = bytes(store._private_key.public_key)
 
@@ -24,10 +23,10 @@ class TestStorePrivateKey(BaseHardhatTestCase):
         w3 = create_web3()
         contract = create_contract(w3)
 
-        redis_namespace = 'test_' + ''.join(random.choices(string.ascii_lowercase, k=32))
+        redis_namespace = generate_redis_namespace()
         store = create_store(w3, contract, redis_namespace=redis_namespace)
         orig_public_key = bytes(store._private_key.public_key)
 
-        redis_namespace2 = 'test_' + ''.join(random.choices(string.ascii_lowercase, k=32))
+        redis_namespace2 = generate_redis_namespace()
         store = create_store(w3, contract, redis_namespace=redis_namespace2)
         self.assertNotEqual(bytes(store._private_key.public_key), orig_public_key)

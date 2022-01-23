@@ -1,6 +1,4 @@
 from unittest import TestCase
-import random
-import string
 from ..helpers import (
     create_web3,
     create_contract,
@@ -13,10 +11,9 @@ from ..helpers import (
     get_tournament_id,
     get_chain_id,
     create_store,
+    generate_redis_namespace,
     BaseHardhatTestCase
 )
-from src.store.store import Store
-from src.store.event_indexer import EventIndexer
 from src.web3 import get_account_address
 
 execution_start_at = get_future_execution_start_at_timestamp()
@@ -28,7 +25,7 @@ class TestStoreFetchPredictions(BaseHardhatTestCase):
     def setUp(self):
         super().setUp()
 
-        redis_namespace = 'test_' + ''.join(random.choices(string.ascii_lowercase, k=32))
+        redis_namespace = generate_redis_namespace()
 
         w3 = create_web3()
         contract = create_contract(w3)

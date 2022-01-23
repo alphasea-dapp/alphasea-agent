@@ -39,6 +39,7 @@ class Store:
             logger=logger,
             rate_limiter=rate_limiter,
             start_block_number=start_block_number,
+            redis_client=redis_client,
         )
         self._logger = create_null_logger() if logger is None else logger
         self._rate_limiter = rate_limiter

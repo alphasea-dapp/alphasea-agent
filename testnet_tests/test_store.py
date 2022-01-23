@@ -4,9 +4,9 @@ import string
 import os
 from web3.eth import Account
 from src.web3 import create_w3, get_wallet_private_key, get_account_address
-from src.store.event_indexer import EventIndexer
 from tests.helpers import (
-    create_contract, create_store, get_tournament_id, get_logger
+    create_contract, create_store, create_event_indexer,
+    get_tournament_id, get_logger
 )
 
 network_name = 'mumbai'
@@ -32,7 +32,7 @@ class TestnetTestStoreCreateModelsIfNotExist(TestCase):
             network_name=network_name,
             start_block_number=start_block_number,
         )
-        event_indexer = EventIndexer(
+        event_indexer = create_event_indexer(
             w3, contract,
             start_block_number=start_block_number,
             logger=get_logger(),

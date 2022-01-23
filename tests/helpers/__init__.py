@@ -8,6 +8,7 @@ from .hardhat_module import HardhatModule
 from src.web3 import network_name_to_chain_id
 from redis_namespace import StrictRedis
 from src.store.store import Store
+from src.store.event_indexer import EventIndexer
 from src.logger import create_logger
 
 
@@ -39,11 +40,14 @@ def create_contract(w3, contract_address=None):
     )
 
 
+def generate_redis_namespace():
+    return 'test_' + ''.join(random.choices(string.ascii_lowercase, k=32))
+
+
 def create_store(w3, contract, redis_namespace=None, network_name=None,
                  start_block_number=None):
-
     if redis_namespace is None:
-        redis_namespace = 'test_' + ''.join(random.choices(string.ascii_lowercase, k=32))
+        redis_namespace = generate_redis_namespace()
     redis_client = StrictRedis.from_url(
         os.getenv('REDIS_URL'),
         namespace=redis_namespace,
@@ -54,6 +58,24 @@ def create_store(w3, contract, redis_namespace=None, network_name=None,
         redis_client=redis_client,
         logger=get_logger(),
         start_block_number=start_block_number,
+    )
+
+
+def create_event_indexer(w3, contract, start_block_number=None, logger=None,
+                         redis_namespace=None, get_logs_limit=None):
+    if redis_namespace is None:
+        redis_namespace = generate_redis_namespace()
+    redis_client = StrictRedis.from_url(
+        os.getenv('REDIS_URL'),
+        namespace=redis_namespace,
+    )
+    return EventIndexer(
+        w3,
+        contract,
+        redis_client=redis_client,
+        logger=logger,
+        start_block_number=start_block_number,
+        get_logs_limit=get_logs_limit,
     )
 
 

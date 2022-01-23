@@ -11,10 +11,9 @@ from ..helpers import (
     get_tournament_id,
     get_chain_id,
     create_store,
+    create_event_indexer,
     BaseHardhatTestCase
 )
-from src.store.store import Store
-from src.store.event_indexer import EventIndexer
 
 
 class TestStoreCreateModelsIfNotExist(BaseHardhatTestCase):
@@ -22,7 +21,7 @@ class TestStoreCreateModelsIfNotExist(BaseHardhatTestCase):
         w3 = create_web3()
         contract = create_contract(w3)
         store = create_store(w3, contract)
-        event_indexer = EventIndexer(w3, contract)
+        event_indexer = create_event_indexer(w3, contract)
 
         store.create_models_if_not_exist([{
             'model_id': 'model1',
@@ -42,7 +41,7 @@ class TestStoreCreateModelsIfNotExist(BaseHardhatTestCase):
         w3 = create_web3()
         contract = create_contract(w3)
         store = create_store(w3, contract)
-        event_indexer = EventIndexer(w3, contract)
+        event_indexer = create_event_indexer(w3, contract)
 
         store.create_models_if_not_exist([{
             'model_id': 'model1',
