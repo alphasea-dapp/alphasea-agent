@@ -84,13 +84,17 @@ class Executor:
         if execution_start_at in self._purchase_infos:
             return
 
+        without_fetch_events = False
+
         # 過去予測を取得
         dfs = []
         for i in range(2, 2 + self._evaluation_periods):
             predictions = self._store.fetch_predictions(
                 tournament_id=self._tournament_id,
-                execution_start_at=execution_start_at - day_seconds * i
+                execution_start_at=execution_start_at - day_seconds * i,
+                without_fetch_events=without_fetch_events,
             )
+            without_fetch_events = True
             for prediction in predictions:
                 try:
                     validate_content(prediction['content'])

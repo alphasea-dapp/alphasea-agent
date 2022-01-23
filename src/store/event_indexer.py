@@ -1,5 +1,6 @@
 import pandas as pd
 import pickle
+import time
 from .utils import convert_keys_to_snake_case
 from ..logger import create_null_logger
 from ..web3 import get_events
@@ -67,8 +68,10 @@ class EventIndexer:
             ('owner', owner),
         ])
 
-    def fetch_predictions(self, model_id: str = None, execution_start_at: int = None):
-        self._fetch_events()
+    def fetch_predictions(self, model_id: str = None, execution_start_at: int = None,
+                          without_fetch_events: bool = False):
+        if not without_fetch_events:
+            self._fetch_events()
 
         return _filter_df(self._predictions, [
             ('model_id', model_id),
@@ -110,6 +113,7 @@ class EventIndexer:
                 self._process_event(event)
 
         self._last_block_number = to_block
+        self._last_fetch_events_at = time.time()
 
     def _cached_fetch_events(self, from_block, to_block):
         cache_enabled = to_block - from_block + 1 == self._get_logs_limit
