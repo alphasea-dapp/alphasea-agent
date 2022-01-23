@@ -3,14 +3,18 @@ import threading
 import pandas as pd
 from ..logger import create_null_logger
 
+
 class MarketDataStore:
-    def __init__(self, data_fetcher_builder=None, logger=None, start_time=None):
+    def __init__(self, data_fetcher_builder=None, logger=None, start_time=None,
+                 execution_lag_sec=None, execution_time_sec=None):
         self.fetcher_builder = data_fetcher_builder
         self.dfs = {}
         self.locks = defaultdict(threading.Lock)
         self.locks_lock = threading.Lock()
         self.logger = create_null_logger() if logger is None else logger
         self.start_time = start_time
+        self._execution_lag_sec = execution_lag_sec
+        self._execution_time_sec = execution_time_sec
 
     def fetch_df_market(self, symbols=None):
         dfs = []
@@ -18,17 +22,20 @@ class MarketDataStore:
             df = self._get_df_ohlcv(
                 exchange='ftx',
                 market=symbol + '-PERP',
-                interval=60,
+                interval=300,
                 price_type='index',
                 force_fetch=True
             )
 
             df = df.reset_index()
-            df['execution_start_at'] = df['timestamp'].dt.floor('1H').astype(int) // (10 ** 9)
+            shift = pd.to_timedelta(self._execution_lag_sec, unit='S')
+            df['execution_start_at'] = (df['timestamp'] - shift).dt.floor(
+                '{}S'.format(self._execution_time_sec)) + shift
+            df['execution_start_at'] = df['execution_start_at'].astype(int) // (10 ** 9)
             df = pd.concat([
                 df.groupby(['execution_start_at'])['cl'].mean().rename('twap'),
             ], axis=1)
-            df['ret'] = df['twap'].shift(-24) / df['twap'] - 1
+            df['ret'] = df['twap'].shift(-24 // (self._execution_time_sec // (60 * 60))) / df['twap'] - 1
             df = df.drop(columns='twap')
             df = df.dropna()
 
@@ -65,7 +72,6 @@ class MarketDataStore:
                 df = df.copy()
 
         return df
-
 
     def _get_lock(self, key):
         with self.locks_lock:

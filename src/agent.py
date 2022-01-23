@@ -25,13 +25,7 @@ class Agent:
         network_name = os.getenv('ALPHASEA_NETWORK')
         chain_id = network_name_to_chain_id(network_name)
         start_block_number = int(os.getenv('ALPHASEA_START_BLOCK_NUMBER', '1'))
-
-        data_fetcher_builder = DataFetcherBuilder()
-        market_data_store = MarketDataStore(
-            data_fetcher_builder=data_fetcher_builder,
-            start_time=time.time() - 24 * 60 * 60 * executor_evaluation_periods * 2,
-            logger=logger,
-        )
+        tournament_id = 'crypto_daily'
 
         rate_limiter = RateLimiterGroup(
             limits=[
@@ -58,6 +52,21 @@ class Agent:
             redis_client=redis_client,
         )
 
+        data_fetcher_builder = DataFetcherBuilder()
+        tournament = store.fetch_tournament(tournament_id)
+        market_data_store = MarketDataStore(
+            data_fetcher_builder=data_fetcher_builder,
+            start_time=time.time() - 24 * 60 * 60 * executor_evaluation_periods * 2,
+            logger=logger,
+            execution_lag_sec=(
+                tournament['prediction_time']
+                + tournament['purchase_time']
+                + tournament['shipping_time']
+                + tournament['execution_preparation_time']
+            ),
+            execution_time_sec=tournament['execution_time'],
+        )
+
         model_selector_name = os.getenv('ALPHASEA_EXECUTOR_MODEL_SELECTOR')
         if model_selector_name == 'equal_weight':
             model_selector = EqualWeightModelSelector(
@@ -70,8 +79,6 @@ class Agent:
             raise Exception('unknown model selector {}'.format(model_selector_name))
 
         tournaments = {}
-
-        tournament_id = 'crypto_daily'
 
         executor = Executor(
             store=store,
