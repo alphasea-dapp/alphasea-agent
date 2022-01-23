@@ -1,5 +1,3 @@
-from unittest import TestCase
-import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from unittest.mock import MagicMock
@@ -13,14 +11,13 @@ from ..helpers import (
     get_shipping_time_shift,
     get_publication_time_shift,
     get_tournament_id,
-    get_chain_id,
     create_store,
     create_event_indexer,
     BaseHardhatTestCase
 )
 from src.executor.executor import Executor
 from src.web3 import get_account_address
-from .all_model_selector import AllModelSelector
+from src.model_selection.all_model_selector import AllModelSelector
 
 day_seconds = 24 * 60 * 60
 

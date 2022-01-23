@@ -13,7 +13,7 @@ from .predictor.predictor import Predictor
 from .market_data_store.data_fetcher_builder import DataFetcherBuilder
 from .market_data_store.market_data_store import MarketDataStore
 from .model_selection.equal_weight_model_selector import EqualWeightModelSelector
-
+from .model_selection.all_model_selector import AllModelSelector
 
 class Agent:
 
@@ -58,10 +58,16 @@ class Agent:
             redis_client=redis_client,
         )
 
-        model_selector = EqualWeightModelSelector(
-            execution_cost=float(os.getenv('ALPHASEA_EXECUTOR_EXECUTION_COST')),
-            assets=Web3.toWei(os.getenv('ALPHASEA_EXECUTOR_ASSETS'), 'ether'),
-        )
+        model_selector_name = os.getenv('ALPHASEA_EXECUTOR_MODEL_SELECTOR')
+        if model_selector_name == 'equal_weight':
+            model_selector = EqualWeightModelSelector(
+                execution_cost=float(os.getenv('ALPHASEA_EXECUTOR_EXECUTION_COST')),
+                assets=Web3.toWei(os.getenv('ALPHASEA_EXECUTOR_ASSETS'), 'ether'),
+            )
+        elif model_selector_name == 'all_model':
+            model_selector = AllModelSelector()
+        else:
+            raise Exception('unknown model selector {}'.format(model_selector_name))
 
         tournaments = {}
 
