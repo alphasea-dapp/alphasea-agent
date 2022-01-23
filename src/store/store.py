@@ -96,7 +96,7 @@ class Store:
             )
             predictions = self._event_indexer.fetch_predictions(
                 execution_start_at=execution_start_at,
-                without_fetch_events=without_fetch_events,
+                without_fetch_events=True,
             )
             predictions = predictions.loc[predictions['model_id'].isin(models['model_id'].unique())]
             return self._predictions_to_dict_list(predictions)
@@ -108,7 +108,8 @@ class Store:
                 owner=self._default_account_address(),
             )
             predictions = self._event_indexer.fetch_predictions(
-                execution_start_at=execution_start_at
+                execution_start_at=execution_start_at,
+                without_fetch_events=True,
             )
             predictions = predictions.loc[predictions['model_id'].isin(models['model_id'].unique())]
             predictions = predictions.loc[predictions['content_key'].isna()]
