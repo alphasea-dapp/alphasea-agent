@@ -90,7 +90,10 @@ class Store:
 
     def fetch_predictions(self, tournament_id: str, execution_start_at: int, without_fetch_events: bool = False):
         with self._lock:
-            models = self._event_indexer.fetch_models(tournament_id=tournament_id)
+            models = self._event_indexer.fetch_models(
+                tournament_id=tournament_id,
+                without_fetch_events=without_fetch_events,
+            )
             predictions = self._event_indexer.fetch_predictions(
                 execution_start_at=execution_start_at,
                 without_fetch_events=without_fetch_events,

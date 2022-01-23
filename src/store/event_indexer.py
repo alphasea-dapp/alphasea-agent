@@ -59,8 +59,10 @@ class EventIndexer:
             ('tournament_id', tournament_id)
         ])
 
-    def fetch_models(self, model_id: str = None, tournament_id: str = None, owner: str = None):
-        self._fetch_events()
+    def fetch_models(self, model_id: str = None, tournament_id: str = None, owner: str = None,
+                     without_fetch_events: bool = False):
+        if not without_fetch_events:
+            self._fetch_events()
 
         return _filter_df(self._models, [
             ('model_id', model_id),
