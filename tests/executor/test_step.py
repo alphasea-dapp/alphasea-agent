@@ -50,6 +50,8 @@ class TestExecutorStep(BaseHardhatTestCase):
             symbol_white_list=['BTC'],
             budget_rate=0.1,
         )
+        executor._initialize()
+        market_data_store.fetch_df_market.assert_called()
 
         model_id = 'model1'
         execution_start_at = get_future_execution_start_at_timestamp()
@@ -135,6 +137,8 @@ class TestExecutorStep(BaseHardhatTestCase):
             symbol_white_list=['BTC'],
             budget_rate=0.1,
         )
+        executor._initialize()
+        market_data_store.fetch_df_market.assert_called()
 
         model_id = 'model1'
         execution_start_at = get_future_execution_start_at_timestamp()

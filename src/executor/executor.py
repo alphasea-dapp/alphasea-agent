@@ -26,6 +26,7 @@ class Executor:
         self._budget_rate = budget_rate
         self._thread = None
         self._thread_terminated = False
+        self._initialized = False
 
     def start_thread(self):
         self._thread = threading.Thread(target=self._run)
@@ -74,6 +75,9 @@ class Executor:
     def _run(self):
         while not self._thread_terminated:
             try:
+                if not self._initialized:
+                    self._initialize()
+                    self._initialized = True
                 self._step()
             except Exception as e:
                 self._logger.error(e)
@@ -160,8 +164,6 @@ class Executor:
     def _step(self):
         now = int(self._time_func())
 
-        if self._tournament is None:
-            self._tournament = self._store.fetch_tournament(self._tournament_id)
         t = self._tournament
 
         purchase_time_buffer = int(t['purchase_time'] * 0.2)
@@ -173,3 +175,9 @@ class Executor:
         if (now - purchase_start_at) % interval < t['purchase_time'] - purchase_time_buffer:
             execution_start_at = ((now - purchase_start_at) // interval) * interval + t['execution_start_at']
             self._step_purchase(execution_start_at)
+
+    def _initialize(self):
+        self._tournament = self._store.fetch_tournament(self._tournament_id)
+        self._market_data_store.fetch_df_market(
+            symbols=self._symbol_white_list,
+        )
