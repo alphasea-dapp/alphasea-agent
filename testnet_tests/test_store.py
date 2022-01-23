@@ -15,7 +15,7 @@ contract_address = os.getenv('ALPHASEA_CONTRACT_ADDRESS')
 
 
 class TestnetTestStoreCreateModelsIfNotExist(TestCase):
-    def test_not_exist(self):
+    def test_ok(self):
         w3 = create_w3(
             network_name=network_name,
             web3_provider_uri=os.getenv('WEB3_PROVIDER_URI'),

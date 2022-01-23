@@ -8,7 +8,7 @@ import pickle
 import time
 from .event_indexer import EventIndexer
 from ..logger import create_null_logger
-from ..web3 import get_account_address
+from ..web3 import get_account_address, transact
 
 # thread safe
 # 暗号化などを隠蔽する
@@ -82,6 +82,7 @@ class Store:
         with self._lock:
             predictions = self._event_indexer.fetch_predictions(model_id=model_id)
             predictions = predictions[predictions['execution_start_at'] <= max_execution_start_at]
+            predictions = predictions[predictions['execution_start_at'] % (24 * 60 * 60) == max_execution_start_at % (24 * 60 * 60)]
             if predictions.shape[0] == 0:
                 return None
             return self._predictions_to_dict_list(predictions)[0]
@@ -379,25 +380,9 @@ class Store:
             self._rate_limiter.rate_limit(tags=['default'])
 
     def _transact(self, func, options):
-        self._rate_limit()
-
-        if hasattr(self._w3.eth.default_account, 'key'):
-            # local private key (not work with hardhat https://github.com/nomiclabs/hardhat/issues/1664)
-            nonce = self._w3.eth.get_transaction_count(self._default_account_address())
-            tx = func.buildTransaction({ **options, 'nonce': nonce })
-            signed_tx = self._w3.eth.account.sign_transaction(tx, private_key=self._w3.eth.default_account.key)
-            self._w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-            tx_hash = signed_tx.hash
-        else:
-            # remote private key
-            tx_hash = func.transact(options)
-
-        receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
-
-        # wait for block number
-        self._rate_limit()
-        while self._w3.eth.block_number < receipt['blockNumber']:
-            time.sleep(1)
-            self._rate_limit()
-
-        return receipt
+        return transact(
+            func=func,
+            options=options,
+            rate_limit_func=self._rate_limit,
+            gas_buffer=20000,
+        )

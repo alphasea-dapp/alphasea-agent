@@ -28,7 +28,7 @@ class TestStoreFetchPredictions(BaseHardhatTestCase):
     def setUp(self):
         super().setUp()
 
-        redis_namespace = 'test_store{}:'.format(random.choices(string.ascii_lowercase, k=32))
+        redis_namespace = 'test_' + ''.join(random.choices(string.ascii_lowercase, k=32))
 
         w3 = create_web3()
         contract = create_contract(w3)
@@ -89,9 +89,7 @@ class TestStoreFetchPredictions(BaseHardhatTestCase):
         }])
 
     def test_not_locally_stored(self):
-        store_purchaser = self.store_purchaser
-
-        predictions = store_purchaser.fetch_predictions(
+        predictions = self.store_purchaser.fetch_predictions(
             tournament_id=get_tournament_id(),
             execution_start_at=execution_start_at
         )

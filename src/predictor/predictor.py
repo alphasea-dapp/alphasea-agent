@@ -162,7 +162,7 @@ class Predictor:
     def _calc_prediction_price(self, model_id: str, execution_start_at: int):
         prediction = self._store.fetch_last_prediction(
             model_id=model_id,
-            max_execution_start_at=execution_start_at - 1
+            max_execution_start_at=execution_start_at - 24 * 60 * 60
         )
         if prediction is None:
             return self._price_min

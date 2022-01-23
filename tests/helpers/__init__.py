@@ -42,9 +42,11 @@ def create_contract(w3, contract_address=None):
 def create_store(w3, contract, redis_namespace=None, network_name=None,
                  start_block_number=None):
 
+    if redis_namespace is None:
+        redis_namespace = 'test_' + ''.join(random.choices(string.ascii_lowercase, k=32))
     redis_client = StrictRedis.from_url(
         os.getenv('REDIS_URL'),
-        namespace='test_store{}:'.format(random.choices(string.ascii_lowercase, k=32)) if redis_namespace is None else redis_namespace
+        namespace=redis_namespace,
     )
     return Store(
         w3, contract,
