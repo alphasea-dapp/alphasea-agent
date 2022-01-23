@@ -10,6 +10,7 @@ from .event_indexer import EventIndexer
 from ..logger import create_null_logger
 from ..web3 import get_account_address, transact
 
+
 # thread safe
 # 暗号化などを隠蔽する
 # 自分の予測は購入できないので、シミュレーションする
@@ -21,11 +22,6 @@ from ..web3 import get_account_address, transact
 # 現在の公開鍵で購入したものは公開鍵で復号
 # それ以外はpublishされた共有鍵で復号
 # (publishされたものとshipされたものが違う場合に対応するため)
-
-
-def _prediction_info_key(model_id, execution_start_at):
-    return 'prediction_info:{}:{}'.format(model_id, execution_start_at)
-
 
 class Store:
     def __init__(self, w3, contract, chain_id, logger=None,
@@ -83,7 +79,8 @@ class Store:
         with self._lock:
             predictions = self._event_indexer.fetch_predictions(model_id=model_id)
             predictions = predictions[predictions['execution_start_at'] <= max_execution_start_at]
-            predictions = predictions[predictions['execution_start_at'] % (24 * 60 * 60) == max_execution_start_at % (24 * 60 * 60)]
+            predictions = predictions[
+                predictions['execution_start_at'] % (24 * 60 * 60) == max_execution_start_at % (24 * 60 * 60)]
             if predictions.shape[0] == 0:
                 return None
             return self._predictions_to_dict_list(predictions)[0]
@@ -142,7 +139,8 @@ class Store:
 
                 models = self._event_indexer.fetch_models(model_id=model_id)
                 if models.shape[0] > 0:
-                    self._logger.debug('Store.create_models_if_not_exist model({}) already exists. skipped'.format(model_id))
+                    self._logger.debug(
+                        'Store.create_models_if_not_exist model({}) already exists. skipped'.format(model_id))
                     continue
 
                 params_list2.append({
@@ -159,7 +157,8 @@ class Store:
                 self._contract.functions.createModels(params_list2),
                 self._default_tx_options()
             )
-            self._logger.debug('Store.create_models_if_not_exist done {} receipt {}'.format(params_list2, dict(receipt)))
+            self._logger.debug(
+                'Store.create_models_if_not_exist done {} receipt {}'.format(params_list2, dict(receipt)))
             return {'receipt': dict(receipt)}
 
     def create_predictions(self, params_list):
@@ -243,7 +242,8 @@ class Store:
                     'value': sum_price,
                 }
             )
-            self._logger.debug('Store.create_purchases done {} receipt {} sum_price {}'.format(params_list2, dict(receipt), sum_price))
+            self._logger.debug(
+                'Store.create_purchases done {} receipt {} sum_price {}'.format(params_list2, dict(receipt), sum_price))
             return {'receipt': dict(receipt), 'sum_price': sum_price}
 
     def ship_purchases(self, params_list):
@@ -392,3 +392,7 @@ class Store:
             rate_limit_func=self._rate_limit,
             gas_buffer=20000,
         )
+
+
+def _prediction_info_key(model_id, execution_start_at):
+    return 'prediction_info:{}:{}'.format(model_id, execution_start_at)

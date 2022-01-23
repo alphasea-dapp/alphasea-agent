@@ -1,23 +1,25 @@
 import time
 import threading
 import traceback
+import pickle
 import pandas as pd
 from ..prediction_format import validate_content, parse_content
 from ..logger import create_null_logger
 
 day_seconds = 24 * 60 * 60
 
+
 class Executor:
     def __init__(self, store=None, tournament_id=None, time_func=None, evaluation_periods=None,
                  model_selector=None, market_data_store=None, budget_rate=None,
-                 symbol_white_list=None, logger=None):
+                 symbol_white_list=None, logger=None, redis_client=None):
         self._store = store
-        self._purchase_infos = {}
         self._tournament = None
         self._tournament_id = tournament_id
         self._time_func = time.time if time_func is None else time_func
         self._interval_sec = 15
         self._logger = create_null_logger() if logger is None else logger
+        self._redis_client = redis_client
 
         self._evaluation_periods = evaluation_periods
         self._model_selector = model_selector
@@ -27,6 +29,20 @@ class Executor:
         self._thread = None
         self._thread_terminated = False
         self._initialized = False
+
+    # redis
+
+    def _get_purchase_info(self, execution_start_at):
+        key = _purchase_info_key(execution_start_at)
+        value = self._redis_client.get(key)
+        if value is None:
+            return None
+        return pickle.loads(value)
+
+    def _set_purchase_info(self, execution_start_at, info):
+        key = _purchase_info_key(execution_start_at)
+        self._redis_client.set(key, pickle.dumps(info))
+        self._redis_client.expireat(key, execution_start_at + 2 * 24 * 60 * 60)
 
     def start_thread(self):
         self._thread = threading.Thread(target=self._run)
@@ -38,7 +54,8 @@ class Executor:
 
     def get_blended_prediction(self, execution_start_at: int):
         empty_result = pd.DataFrame([], columns=['symbol', 'position']).set_index('symbol')
-        if execution_start_at not in self._purchase_infos:
+        purchase_info = self._get_purchase_info(execution_start_at)
+        if purchase_info is None:
             return empty_result
 
         predictions = self._store.fetch_predictions(
@@ -48,7 +65,7 @@ class Executor:
         predictions = pd.DataFrame(predictions)
         predictions = predictions.set_index('model_id')
 
-        df_weight = self._purchase_infos[execution_start_at]['df_weight']
+        df_weight = purchase_info['df_weight']
 
         dfs = []
         for model_id in df_weight.index:
@@ -85,7 +102,8 @@ class Executor:
             time.sleep(self._interval_sec)
 
     def _step_purchase(self, execution_start_at):
-        if execution_start_at in self._purchase_infos:
+        purchase_info = self._get_purchase_info(execution_start_at)
+        if purchase_info is not None:
             return
 
         without_fetch_events = False
@@ -125,7 +143,8 @@ class Executor:
             tournament_id=self._tournament_id,
             execution_start_at=execution_start_at
         )
-        df_model = pd.DataFrame(latest_predictions, columns=['model_id', 'price', 'locally_stored']).set_index('model_id')
+        df_model = pd.DataFrame(latest_predictions, columns=['model_id', 'price', 'locally_stored']).set_index(
+            'model_id')
         df_model = df_model.sort_index()
         # メモリにあるモデルの購入費用は0
         df_model.loc[df_model['locally_stored'], 'price'] = 0
@@ -157,9 +176,9 @@ class Executor:
             })
         self._store.create_purchases(create_purchase_params_list)
 
-        self._purchase_infos[execution_start_at] = {
+        self._set_purchase_info(execution_start_at, {
             'df_weight': df_weight
-        }
+        })
 
     def _step(self):
         now = int(self._time_func())
@@ -168,7 +187,7 @@ class Executor:
 
         purchase_time_buffer = int(t['purchase_time'] * 0.2)
         purchase_start_at = (t['execution_start_at'] - t['execution_preparation_time'] -
-                               t['shipping_time'] - t['purchase_time'] + purchase_time_buffer)
+                             t['shipping_time'] - t['purchase_time'] + purchase_time_buffer)
 
         interval = t['execution_time']
 
@@ -181,3 +200,7 @@ class Executor:
         self._market_data_store.fetch_df_market(
             symbols=self._symbol_white_list,
         )
+
+
+def _purchase_info_key(execution_start_at):
+    return 'purchase_info:{}'.format(execution_start_at)

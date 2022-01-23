@@ -44,18 +44,21 @@ def generate_redis_namespace():
     return 'test_' + ''.join(random.choices(string.ascii_lowercase, k=32))
 
 
+def create_redis_client(namespace=None):
+    if namespace is None:
+        namespace = generate_redis_namespace()
+    return StrictRedis.from_url(
+        os.getenv('REDIS_URL'),
+        namespace=namespace,
+    )
+
+
 def create_store(w3, contract, redis_namespace=None, network_name=None,
                  start_block_number=None):
-    if redis_namespace is None:
-        redis_namespace = generate_redis_namespace()
-    redis_client = StrictRedis.from_url(
-        os.getenv('REDIS_URL'),
-        namespace=redis_namespace,
-    )
     return Store(
         w3, contract,
         chain_id=get_chain_id(network_name=network_name),
-        redis_client=redis_client,
+        redis_client=create_redis_client(namespace=redis_namespace),
         logger=get_logger(),
         start_block_number=start_block_number,
     )
@@ -63,16 +66,10 @@ def create_store(w3, contract, redis_namespace=None, network_name=None,
 
 def create_event_indexer(w3, contract, start_block_number=None, logger=None,
                          redis_namespace=None, get_logs_limit=None):
-    if redis_namespace is None:
-        redis_namespace = generate_redis_namespace()
-    redis_client = StrictRedis.from_url(
-        os.getenv('REDIS_URL'),
-        namespace=redis_namespace,
-    )
     return EventIndexer(
         w3,
         contract,
-        redis_client=redis_client,
+        redis_client=create_redis_client(namespace=redis_namespace),
         logger=logger,
         start_block_number=start_block_number,
         get_logs_limit=get_logs_limit,

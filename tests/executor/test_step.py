@@ -13,6 +13,7 @@ from ..helpers import (
     get_tournament_id,
     create_store,
     create_event_indexer,
+    create_redis_client,
     BaseHardhatTestCase
 )
 from src.executor.executor import Executor
@@ -49,6 +50,7 @@ class TestExecutorStep(BaseHardhatTestCase):
             market_data_store=market_data_store,
             symbol_white_list=['BTC'],
             budget_rate=0.1,
+            redis_client=create_redis_client(),
         )
         executor._initialize()
         market_data_store.fetch_df_market.assert_called()
@@ -136,6 +138,7 @@ class TestExecutorStep(BaseHardhatTestCase):
             market_data_store=market_data_store,
             symbol_white_list=['BTC'],
             budget_rate=0.1,
+            redis_client=create_redis_client(),
         )
         executor._initialize()
         market_data_store.fetch_df_market.assert_called()

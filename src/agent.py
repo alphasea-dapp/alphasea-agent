@@ -37,11 +37,6 @@ class Agent:
             ]
         )
 
-        redis_client = StrictRedis.from_url(
-            os.getenv('REDIS_URL'),
-            namespace='store:'
-        )
-
         store = Store(
             w3=w3,
             contract=contract,
@@ -49,7 +44,10 @@ class Agent:
             logger=logger,
             rate_limiter=rate_limiter,
             start_block_number=start_block_number,
-            redis_client=redis_client,
+            redis_client=StrictRedis.from_url(
+                os.getenv('REDIS_URL'),
+                namespace='store:'
+            ),
         )
 
         data_fetcher_builder = DataFetcherBuilder()
@@ -89,6 +87,10 @@ class Agent:
             symbol_white_list=executor_symbol_white_list,
             budget_rate=executor_budget_rate,
             logger=logger,
+            redis_client=StrictRedis.from_url(
+                os.getenv('REDIS_URL'),
+                namespace='executor:'
+            ),
         )
 
         predictor = Predictor(
