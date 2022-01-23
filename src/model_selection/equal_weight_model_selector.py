@@ -54,12 +54,12 @@ class EqualWeightModelSelector:
 
     # df: index: [model_id, execution_start_at, symbol], columns: [position, ret]
     # df_market: index: [execution_start_at, symbol], columns: [ret]
-    # df_model: index: [model_id], columns: [price]
-    def select_model(self, df=None, df_market=None, df_model=None, random_state=None, budget=None):
+    # df_current: index: [model_id], columns: [price]
+    def select_model(self, df=None, df_market=None, df_current=None, random_state=None, budget=None):
         df = df.copy()
 
         # 有効なものに限定
-        df = df.loc[df.index.get_level_values('model_id').isin(df_model.index)]
+        df = df.loc[df.index.get_level_values('model_id').isin(df_current.index)]
 
         # リターン計算
         df = df.join(df_market, on=['execution_start_at', 'symbol'], how='left')
@@ -85,7 +85,7 @@ class EqualWeightModelSelector:
         problem = Problem(
             np.zeros(df_ret.shape[1], dtype=np.bool),
             ret_numpy=df_ret.values,
-            price_numpy=df_model.loc[df_ret.columns, 'price'].values,
+            price_numpy=df_current.loc[df_ret.columns, 'price'].values,
             assets=self._assets,
             budget=int(budget),
             random_state=random_state,

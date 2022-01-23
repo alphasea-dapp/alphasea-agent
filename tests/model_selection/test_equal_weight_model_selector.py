@@ -5,6 +5,7 @@ from pandas.testing import assert_frame_equal
 from src.model_selection.equal_weight_model_selector import EqualWeightModelSelector
 import random
 
+
 class TestEqualWeightModelSelector(TestCase):
     def test_ok(self):
         selector = EqualWeightModelSelector(
@@ -36,15 +37,15 @@ class TestEqualWeightModelSelector(TestCase):
             columns=['execution_start_at', 'symbol', 'ret']
         ).set_index(['execution_start_at', 'symbol'])
 
-        df_model = pd.DataFrame([
+        df_current = pd.DataFrame([
             ['model1', 1],
             ['model2', 1],
         ], columns=['model_id', 'price']).set_index('model_id')
 
-        random.seed(1) # simanneal depends random.random
+        random.seed(1)  # simanneal depends random.random
         df_weight = selector.select_model(
             df=df,
-            df_model=df_model,
+            df_current=df_current,
             df_market=df_market,
             budget=100,
             random_state=1,

@@ -13,7 +13,7 @@ from .mean_variance_optimization import mean_variance_optimize
 #                  symbol_white_list: list):
 #         ...
 #
-#     def select_model(self, df=None, df_model=None, random_state=None):
+#     def select_model(self, df=None, df_current=None, random_state=None):
 #         # symbolホワイトリスト
 #         df = df.loc[df.index.get_level_values('symbol').isin(self._symbol_white_list)]
 #
@@ -29,8 +29,8 @@ from .mean_variance_optimization import mean_variance_optimize
 #
 #         # 最適化
 #         ret_numpy = df_ret.values
-#         df_model = df_model.loc[df_ret.columns]
-#         price_numpy = df_model['price'].values
+#         df_current = df_current.loc[df_ret.columns]
+#         price_numpy = df_current['price'].values
 #
 #         model_count = df_ret.shape[1]
 #         rs = np.random.RandomState(random_state)
