@@ -70,6 +70,7 @@ class Executor:
         for i in range(round_count + 1):
             df_blended_list.append(self._get_blended_prediction(
                 execution_start_at=execution_start_at - execution_time * i,
+                without_fetch_events=i > 0,
             ))
         df_blended_list = list(reversed(df_blended_list))
 
@@ -78,7 +79,7 @@ class Executor:
             df_blended_list,
         )
 
-    def _get_blended_prediction(self, execution_start_at: int):
+    def _get_blended_prediction(self, execution_start_at: int, without_fetch_events=False):
         purchase_info = self._get_purchase_info(execution_start_at)
         if purchase_info is None:
             df_weight = None
@@ -89,6 +90,7 @@ class Executor:
             store=self._store,
             tournament_id=self._tournament_id,
             execution_start_at=execution_start_at,
+            without_fetch_events=without_fetch_events,
         )
 
         return blend_predictions(

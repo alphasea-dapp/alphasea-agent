@@ -1,6 +1,6 @@
 import pandas as pd
 from pandas.testing import assert_frame_equal
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from ..helpers import (
     create_web3,
     create_contract,
@@ -17,6 +17,7 @@ from ..helpers import (
     BaseHardhatTestCase
 )
 from src.executor.executor import Executor
+from src.store.event_indexer import EventIndexer
 from src.model_selection.all_model_selector import AllModelSelector
 
 execution_start_at = get_future_execution_start_at_timestamp()
@@ -79,6 +80,25 @@ class TestExecutorGetBlendedPrediction(BaseHardhatTestCase):
         df = self.executor._get_blended_prediction(
             execution_start_at=execution_start_at
         )
+
+        expected = pd.DataFrame([
+            ['BTC', 0.5],
+        ], columns=['symbol', 'position']).set_index('symbol')
+
+        assert_frame_equal(df, expected)
+
+    def test_without_fetch_events(self):
+        # fetch events
+        self.executor._get_blended_prediction(
+            execution_start_at=execution_start_at
+        )
+
+        with patch.object(EventIndexer, '_fetch_events') as mocked_fetch_events:
+            df = self.executor._get_blended_prediction(
+                execution_start_at=execution_start_at,
+                without_fetch_events=True
+            )
+            mocked_fetch_events.assert_not_called()
 
         expected = pd.DataFrame([
             ['BTC', 0.5],

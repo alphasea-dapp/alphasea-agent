@@ -105,10 +105,11 @@ def df_weight_to_purchase_params_list(
     return create_purchase_params_list
 
 
-def fetch_current_predictions(store, tournament_id, execution_start_at):
+def fetch_current_predictions(store, tournament_id, execution_start_at, without_fetch_events=False):
     current_predictions = store.fetch_predictions(
         tournament_id=tournament_id,
-        execution_start_at=execution_start_at
+        execution_start_at=execution_start_at,
+        without_fetch_events=without_fetch_events,
     )
     df_current = pd.DataFrame(
         current_predictions,
