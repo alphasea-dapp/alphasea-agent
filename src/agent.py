@@ -71,6 +71,7 @@ class Agent:
             model_selector = EqualWeightModelSelector(
                 execution_cost=float(os.getenv('ALPHASEA_EXECUTOR_EXECUTION_COST')),
                 assets=Web3.toWei(os.getenv('ALPHASEA_EXECUTOR_ASSETS'), 'ether'),
+                logger=logger,
             )
         elif model_selector_name == 'all_model':
             model_selector = AllModelSelector()

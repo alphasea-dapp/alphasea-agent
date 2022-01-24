@@ -149,6 +149,7 @@ class Executor:
         # モデル選択
         df_weight = self._model_selector.select_model(params)
         df_weight = df_weight.loc[df_weight['weight'] > 0]
+        self._logger.debug('df_weight {}'.format(df_weight))
 
         # 購入
         create_purchase_params_list = df_weight_to_purchase_params_list(

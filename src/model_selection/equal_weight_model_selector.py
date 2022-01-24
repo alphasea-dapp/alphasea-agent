@@ -1,14 +1,15 @@
 import numpy as np
 import pandas as pd
 from simanneal import Annealer
-
+from ..logger import create_null_logger
 
 class EqualWeightModelSelector:
 
     def __init__(self, execution_cost: float,
-                 assets: float):
+                 assets: float, logger=None):
         self._execution_cost = execution_cost
         self._assets = assets
+        self._logger = create_null_logger() if logger is None else logger
 
     def select_model(self, params):
         df_ret = params.df_ret
@@ -20,6 +21,15 @@ class EqualWeightModelSelector:
 
         # aggregate symbol
         df_ret = df_ret.groupby(level='model_id', axis=1).sum()
+
+        self._logger.debug('EqualWeightModelSelector.select_model df_ret statistics')
+        for model_id in df_ret.columns:
+            self._logger.debug('{} mean {} std {} sharpe {}'.format(
+                model_id,
+                df_ret[model_id].mean(),
+                df_ret[model_id].std(),
+                df_ret[model_id].mean() / (1e-37 + df_ret[model_id].std()),
+            ))
 
         # 最適化
         problem = Problem(
