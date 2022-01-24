@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from pandas.testing import assert_frame_equal
 from unittest.mock import MagicMock
 from ..helpers import (
@@ -74,12 +75,15 @@ class TestExecutorFetchHistoricalPredictions(BaseHardhatTestCase):
 
     def test_ok(self):
         execution_start_at = self.execution_start_at
+        execution_start_ats = np.sort(
+            execution_start_at
+            - day_seconds * np.arange(2, 2 + evaluation_periods)
+        )
 
         df = fetch_historical_predictions(
             store=self.store,
             tournament_id=get_tournament_id(),
-            execution_start_at=execution_start_at,
-            evaluation_periods=evaluation_periods,
+            execution_start_ats=execution_start_ats,
             logger=create_null_logger(),
         )
 
@@ -95,11 +99,15 @@ class TestExecutorFetchHistoricalPredictions(BaseHardhatTestCase):
         assert_frame_equal(df, expected)
 
     def test_empty(self):
+        execution_start_ats = np.sort(
+            self.execution_start_at
+            - day_seconds * np.arange(2, 2 + evaluation_periods)
+        ) - day_seconds * evaluation_periods
+
         df = fetch_historical_predictions(
             store=self.store,
             tournament_id=get_tournament_id(),
-            execution_start_at=self.execution_start_at - evaluation_periods * day_seconds,
-            evaluation_periods=evaluation_periods,
+            execution_start_ats=execution_start_ats,
             logger=create_null_logger(),
         )
 

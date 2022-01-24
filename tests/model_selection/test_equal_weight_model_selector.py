@@ -1,9 +1,10 @@
 from unittest import TestCase
+import random
 import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from src.model_selection.equal_weight_model_selector import EqualWeightModelSelector
-import random
+from src.executor.utils import create_model_selection_params
 
 
 class TestEqualWeightModelSelector(TestCase):
@@ -43,13 +44,18 @@ class TestEqualWeightModelSelector(TestCase):
         ], columns=['model_id', 'price']).set_index('model_id')
 
         random.seed(1)  # simanneal depends random.random
-        df_weight = selector.select_model(
+
+        params = create_model_selection_params(
             df=df,
             df_current=df_current,
             df_market=df_market,
-            budget=100,
-            random_state=1,
+            execution_start_ats=[1, 2],
+            symbols=['BTC', 'ETH'],
         )
+        params.budget = 100
+        params.random_state = 1
+
+        df_weight = selector.select_model(params)
 
         expected = pd.DataFrame([
             ['model1', 1.0],

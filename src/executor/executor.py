@@ -2,6 +2,7 @@ import time
 import threading
 import traceback
 import pickle
+import numpy as np
 from ..logger import create_null_logger
 from .utils import (
     fetch_historical_predictions,
@@ -10,6 +11,7 @@ from .utils import (
     blend_predictions,
     floor_to_execution_start_at,
     calc_target_positions,
+    create_model_selection_params
 )
 
 day_seconds = 24 * 60 * 60
@@ -111,11 +113,15 @@ class Executor:
         if purchase_info is not None:
             return
 
+        execution_start_ats = np.sort(
+            execution_start_at
+            - day_seconds * np.arange(2, 2 + self._evaluation_periods)
+        )
+
         df = fetch_historical_predictions(
             store=self._store,
             tournament_id=self._tournament_id,
-            execution_start_at=execution_start_at,
-            evaluation_periods=self._evaluation_periods,
+            execution_start_ats=execution_start_ats,
             logger=self._logger,
         )
 
@@ -125,18 +131,21 @@ class Executor:
             execution_start_at=execution_start_at,
         )
 
-        # リターン取得
         df_market = self._market_data_store.fetch_df_market(
             symbols=self._symbol_white_list,
         )
 
-        # モデル選択
-        df_weight = self._model_selector.select_model(
+        params = create_model_selection_params(
             df=df,
             df_current=df_current,
             df_market=df_market,
-            budget=self._budget_rate * self._store.get_balance(),
+            execution_start_ats=execution_start_ats,
+            symbols=self._symbol_white_list
         )
+        params.budget = self._budget_rate * self._store.get_balance()
+
+        # モデル選択
+        df_weight = self._model_selector.select_model(params)
         df_weight = df_weight.loc[df_weight['weight'] > 0]
 
         # 購入

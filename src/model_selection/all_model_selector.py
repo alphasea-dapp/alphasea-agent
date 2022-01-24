@@ -7,7 +7,8 @@ class AllModelSelector:
     def __init__(self):
         ...
 
-    def select_model(self, df=None, df_market=None, df_current=None, random_state=None, budget=None):
+    def select_model(self, params):
+        df_current = params.df_current
         model_count = df_current.shape[0]
 
         return pd.DataFrame(

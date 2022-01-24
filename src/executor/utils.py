@@ -1,8 +1,37 @@
 import traceback
 import pandas as pd
 from ..prediction_format import validate_content, parse_content
+from ..model_selection.model_selection_params import ModelSelectionParams
 
 day_seconds = 24 * 60 * 60
+
+
+def create_model_selection_params(
+        df, df_current, df_market, execution_start_ats, symbols):
+    df = df.join(df_market, on=['execution_start_at', 'symbol'], how='left')
+
+    df = df.loc[df.index.get_level_values('model_id').isin(df_current.index)]
+    df = df.loc[df.index.get_level_values('symbol').isin(symbols)]
+
+    params = ModelSelectionParams(
+        df_ret=_pivot_df(df, execution_start_ats, 'ret'),
+        df_position=_pivot_df(df, execution_start_ats, 'position'),
+        df_current=df_current.copy(),
+    )
+    params.validate()
+    return params
+
+
+def _pivot_df(df, execution_start_ats, values):
+    df = df.reset_index().pivot(
+        index='execution_start_at',
+        columns=['model_id', 'symbol'],
+        values=values
+    )
+    df = df.fillna(0)
+    df = df.reindex(execution_start_ats, fill_value=0)
+    df = df.sort_index(axis=1)
+    return df
 
 
 # df_blended_listの順番は過去から最近
@@ -93,15 +122,15 @@ def fetch_current_predictions(store, tournament_id, execution_start_at):
 
 def fetch_historical_predictions(
         store, tournament_id,
-        execution_start_at, evaluation_periods,
+        execution_start_ats,
         logger):
     without_fetch_events = False
 
     dfs = []
-    for i in range(2, 2 + evaluation_periods):
+    for execution_start_at in execution_start_ats:
         predictions = store.fetch_predictions(
             tournament_id=tournament_id,
-            execution_start_at=execution_start_at - day_seconds * i,
+            execution_start_at=execution_start_at,
             without_fetch_events=without_fetch_events,
         )
         without_fetch_events = True
