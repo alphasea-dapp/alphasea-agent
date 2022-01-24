@@ -9,11 +9,13 @@ class TestExecutorBlendPredictions(TestCase):
     def test_ok(self):
         content1 = b"""symbol,position
 BTC,0.1
-ETH,0.2"""
+ETH,0.2
+XRP,0.1"""
 
         content2 = b"""symbol,position
 BTC,0.3
-ETH,0.4"""
+ETH,0.4
+ADA,0.1"""
 
         df_weight = pd.DataFrame(
             [
@@ -30,7 +32,7 @@ ETH,0.4"""
                 ['model1', content1],
                 ['model2', content2],
                 ['model_invalid', 'invalid'],
-                ['model_df_current', 1],
+                ['model_df_current_only', 1],
             ],
             columns=['model_id', 'content'],
         ).set_index(['model_id'])
@@ -39,9 +41,11 @@ ETH,0.4"""
             [
                 ['BTC', 0.7],
                 ['ETH', 1.0],
+                ['XRP', 0.1],
+                ['ADA', 0.2],
             ],
             columns=['symbol', 'position'],
-        ).set_index(['symbol'])
+        ).set_index(['symbol']).sort_index()
 
         assert_frame_equal(blend_predictions(
             df_weight=df_weight,

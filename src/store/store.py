@@ -5,7 +5,6 @@ from nacl.public import PublicKey, PrivateKey, SealedBox
 from nacl.secret import SecretBox
 import nacl.utils
 import pickle
-import time
 from .event_indexer import EventIndexer
 from ..logger import create_null_logger
 from ..web3 import get_account_address, transact
@@ -116,7 +115,10 @@ class Store:
         with self._lock:
             my_models = self._event_indexer.fetch_models(
                 tournament_id=tournament_id, owner=self._default_account_address())
-            purchases = self._event_indexer.fetch_purchases(execution_start_at=execution_start_at)
+            purchases = self._event_indexer.fetch_purchases(
+                execution_start_at=execution_start_at,
+                without_fetch_events=True,
+            )
             purchases = purchases.loc[purchases['model_id'].isin(my_models['model_id'].unique())]
             purchases = purchases.loc[purchases['encrypted_content_key'].isna()]
 
@@ -319,7 +321,6 @@ class Store:
         predictions = predictions.copy()
 
         # 自分の予測はplaintextをくっつける
-        predictions['locally_stored'] = False
         for idx in predictions.index:
             model_id = predictions.loc[idx, 'model_id']
             execution_start_at = predictions.loc[idx, 'execution_start_at']
@@ -330,12 +331,12 @@ class Store:
             if prediction_info is not None:
                 content_key = prediction_info['content_key']
                 predictions.loc[idx, 'content_key'] = content_key
-                predictions.loc[idx, 'locally_stored'] = True
 
         # ship済みであればplaintextをくっつける
         my_purchases = self._event_indexer.fetch_purchases(
             purchaser=self._default_account_address(),
             public_key=bytes(self._private_key.public_key),
+            without_fetch_events=True,
         )
         my_purchases = my_purchases.loc[~my_purchases['encrypted_content_key'].isna()]
         predictions = predictions.merge(
@@ -345,7 +346,9 @@ class Store:
         )
 
         # 購入数を追加
-        purchases = self._event_indexer.fetch_purchases()
+        purchases = self._event_indexer.fetch_purchases(
+            without_fetch_events=True
+        )
         purchase_count = purchases.groupby(['model_id', 'execution_start_at'])['purchaser'].count()
         predictions = predictions.join(
             purchase_count.rename('purchase_count'),

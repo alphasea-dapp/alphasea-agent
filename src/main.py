@@ -83,10 +83,10 @@ def post_submit_prediction(model_id: str = Body(...),
     return {}
 
 
-@app.get("/blended_prediction.csv")
-def get_blended_prediction_csv(tournament_id: str, execution_start_at: int):
-    df = agent.tournaments[tournament_id].executor.get_blended_prediction(
-        execution_start_at=int(execution_start_at),
+@app.get("/target_positions.csv")
+def get_target_positions_csv(tournament_id: str, timestamp: int):
+    df = agent.tournaments[tournament_id].executor.get_target_positions(
+        timestamp=int(timestamp),
     )
     output = StringIO()
     df.to_csv(output)

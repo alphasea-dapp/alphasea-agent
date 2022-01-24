@@ -9,8 +9,9 @@ class TestExecutorPredictionToDf(TestCase):
     def test_ok(self):
         content = b"""symbol,position
 BTC,0.1
+XRP,0.3
 ETH,0.2
-XRP,0.3"""
+"""
         prediction = {
             'content': content,
             'model_id': 'model1',

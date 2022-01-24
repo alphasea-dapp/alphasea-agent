@@ -74,7 +74,6 @@ class TestStoreFetchPredictionsToPublish(BaseHardhatTestCase):
             **predictions[0],
             'model_id': model_id,
             'execution_start_at': execution_start_at,
-            'locally_stored': True,
             'content': content,
         }])
 

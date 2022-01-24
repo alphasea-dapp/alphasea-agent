@@ -26,11 +26,9 @@ class TestStoreFetchPurchasesToShip(BaseHardhatTestCase):
     def setUp(self):
         super().setUp()
 
-        redis_namespace = generate_redis_namespace()
-
         w3 = create_web3()
         contract = create_contract(w3)
-        store = create_store(w3, contract, redis_namespace=redis_namespace)
+        store = create_store(w3, contract)
         self.store = store
         self.w3 = w3
 

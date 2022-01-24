@@ -16,7 +16,7 @@ class Predictor:
         self._store = store
         self._predictions = defaultdict(defaultdict)
         self._tournament_id = tournament_id
-        self._tournament = None
+        self._tournament = store.fetch_tournament(tournament_id)
         self._time_func = time.time if time_func is None else time_func
         self._lock = threading.Lock()
         self._interval_sec = 15
@@ -36,16 +36,17 @@ class Predictor:
         self._thread_terminated = True
         self._thread.join()
 
+    # called from other thread
     def submit_prediction(self, model_id: str, execution_start_at: int,
                           prediction_license: str, content: bytes):
 
         if prediction_license != 'CC0-1.0':
             raise Exception('prediction_license must be CC0-1.0')
 
-        t = self._get_tournament()
+        t = self._tournament
         if execution_start_at % t['execution_time'] != t['execution_start_at']:
-            raise Exception('invalid execution_start_at {} {}'.format(execution_start_at,
-                                                                      self._get_tournament()['execution_start_at']))
+            raise Exception('invalid execution_start_at {} {}'.format(
+                execution_start_at, t['execution_start_at']))
 
         validate_model_id(model_id)
 
@@ -127,15 +128,10 @@ class Predictor:
             })
         self._store.publish_predictions(publish_prediction_params_list)
 
-    def _get_tournament(self):
-        if self._tournament is None:
-            self._tournament = self._store.fetch_tournament(self._tournament_id)
-        return self._tournament
-
     def _step(self):
         now = int(self._time_func())
 
-        t = self._get_tournament()
+        t = self._tournament
 
         prediction_time_buffer = int(t['prediction_time'] * 0.2)
         prediction_start_at = (t['execution_start_at'] - t['execution_preparation_time'] -

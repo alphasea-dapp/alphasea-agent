@@ -81,8 +81,10 @@ class EventIndexer:
         ])
 
     def fetch_purchases(self, model_id: str = None, execution_start_at: int = None,
-                        purchaser: str = None, public_key: bytes = None):
-        self._fetch_events()
+                        purchaser: str = None, public_key: bytes = None,
+                        without_fetch_events: bool = False):
+        if not without_fetch_events:
+            self._fetch_events()
 
         return _filter_df(self._purchases, [
             ('model_id', model_id),

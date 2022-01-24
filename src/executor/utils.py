@@ -5,6 +5,35 @@ from ..prediction_format import validate_content, parse_content
 day_seconds = 24 * 60 * 60
 
 
+# df_blended_listの順番は過去から最近
+def calc_target_positions(t, df_blended_list):
+    df_target = pd.concat(df_blended_list[1:]).groupby('symbol').sum() / (len(df_blended_list) - 1)
+    df_target_prev = pd.concat(df_blended_list[:-1]).groupby('symbol').sum() / (len(df_blended_list) - 1)
+
+    df_target['position'] *= t
+    df_target_prev['position'] *= 1 - t
+
+    df = pd.concat([df_target, df_target_prev]).groupby('symbol').sum()
+    df = df.sort_index()
+    return df
+
+
+def floor_to_execution_start_at(timestamp, tournament):
+    execution_lag = (
+            tournament['prediction_time']
+            + tournament['purchase_time']
+            + tournament['shipping_time']
+            + tournament['execution_preparation_time']
+    )
+    execution_start_at = (
+            ((timestamp - execution_lag) // tournament['execution_time'])
+            * tournament['execution_time']
+            + execution_lag
+    )
+    t = 1.0 * (timestamp - execution_start_at) / tournament['execution_time']
+    return execution_start_at, t
+
+
 def blend_predictions(df_weight, df_current, logger=None):
     empty_result = pd.DataFrame([], columns=['symbol', 'position']).set_index('symbol')
 
@@ -38,7 +67,7 @@ def df_weight_to_purchase_params_list(
         df_current, df_weight, execution_start_at):
     create_purchase_params_list = []
     for model_id in df_weight.index:
-        if df_current.loc[model_id, 'locally_stored']:
+        if not pd.isna(df_current.loc[model_id, 'content']):
             continue
         create_purchase_params_list.append({
             'model_id': model_id,
@@ -54,11 +83,11 @@ def fetch_current_predictions(store, tournament_id, execution_start_at):
     )
     df_current = pd.DataFrame(
         current_predictions,
-        columns=['model_id', 'price', 'locally_stored', 'content']
+        columns=['model_id', 'price', 'content']
     ).set_index('model_id')
     df_current = df_current.sort_index()
-    # メモリにあるモデルの購入費用は0
-    df_current.loc[df_current['locally_stored'], 'price'] = 0
+    # すでにcontentにアクセスできる場合は購入費用ゼロ
+    df_current.loc[~pd.isna(df_current['content']), 'price'] = 0
     return df_current
 
 

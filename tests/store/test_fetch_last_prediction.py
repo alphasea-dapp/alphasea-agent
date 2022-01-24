@@ -66,7 +66,7 @@ class TestStoreFetchLastPrediction(BaseHardhatTestCase):
             **prediction,
             'model_id': model_id,
             'execution_start_at': execution_start_at,
-            'locally_stored': True
+            'content': content
         })
 
     def test_different_model_id(self):

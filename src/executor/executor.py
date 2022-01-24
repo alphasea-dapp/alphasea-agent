@@ -8,7 +8,11 @@ from .utils import (
     fetch_current_predictions,
     df_weight_to_purchase_params_list,
     blend_predictions,
+    floor_to_execution_start_at,
+    calc_target_positions,
 )
+
+day_seconds = 24 * 60 * 60
 
 
 class Executor:
@@ -16,7 +20,7 @@ class Executor:
                  model_selector=None, market_data_store=None, budget_rate=None,
                  symbol_white_list=None, logger=None, redis_client=None):
         self._store = store
-        self._tournament = None
+        self._tournament = store.fetch_tournament(tournament_id)
         self._tournament_id = tournament_id
         self._time_func = time.time if time_func is None else time_func
         self._interval_sec = 15
@@ -54,7 +58,25 @@ class Executor:
         self._thread_terminated = True
         self._thread.join()
 
-    def get_blended_prediction(self, execution_start_at: int):
+    # called from other thread
+    def get_target_positions(self, timestamp: int):
+        execution_start_at, t = floor_to_execution_start_at(timestamp, self._tournament)
+        execution_time = self._tournament['execution_time']
+
+        df_blended_list = []
+        round_count = day_seconds // execution_time
+        for i in range(round_count + 1):
+            df_blended_list.append(self._get_blended_prediction(
+                execution_start_at=execution_start_at - execution_time * i,
+            ))
+        df_blended_list = list(reversed(df_blended_list))
+
+        return calc_target_positions(
+            t,
+            df_blended_list,
+        )
+
+    def _get_blended_prediction(self, execution_start_at: int):
         purchase_info = self._get_purchase_info(execution_start_at)
         if purchase_info is None:
             df_weight = None
@@ -145,7 +167,6 @@ class Executor:
             self._step_purchase(execution_start_at)
 
     def _initialize(self):
-        self._tournament = self._store.fetch_tournament(self._tournament_id)
         self._market_data_store.fetch_df_market(
             symbols=self._symbol_white_list,
         )

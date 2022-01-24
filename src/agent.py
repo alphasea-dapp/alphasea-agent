@@ -15,6 +15,7 @@ from .market_data_store.market_data_store import MarketDataStore
 from .model_selection.equal_weight_model_selector import EqualWeightModelSelector
 from .model_selection.all_model_selector import AllModelSelector
 
+
 class Agent:
 
     def __init__(self, w3=None, contract=None, logger=None):
@@ -57,10 +58,10 @@ class Agent:
             start_time=time.time() - 24 * 60 * 60 * executor_evaluation_periods * 2,
             logger=logger,
             execution_lag_sec=(
-                tournament['prediction_time']
-                + tournament['purchase_time']
-                + tournament['shipping_time']
-                + tournament['execution_preparation_time']
+                    tournament['prediction_time']
+                    + tournament['purchase_time']
+                    + tournament['shipping_time']
+                    + tournament['execution_preparation_time']
             ),
             execution_time_sec=tournament['execution_time'],
         )

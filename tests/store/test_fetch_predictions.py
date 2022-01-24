@@ -68,7 +68,6 @@ class TestStoreFetchPredictions(BaseHardhatTestCase):
             **predictions[0],
             'model_id': model_id,
             'execution_start_at': execution_start_at,
-            'locally_stored': True,
             'content': content,
         }])
 
@@ -81,7 +80,6 @@ class TestStoreFetchPredictions(BaseHardhatTestCase):
             **predictions[0],
             'model_id': model_id,
             'execution_start_at': execution_start_at,
-            'locally_stored': True,
             'content': content,
         }])
 
@@ -94,7 +92,6 @@ class TestStoreFetchPredictions(BaseHardhatTestCase):
             **predictions[0],
             'model_id': model_id,
             'execution_start_at': execution_start_at,
-            'locally_stored': False,
             'content': None,
         }])
 
@@ -123,7 +120,6 @@ class TestStoreFetchPredictions(BaseHardhatTestCase):
             **predictions[0],
             'model_id': model_id,
             'execution_start_at': execution_start_at,
-            'locally_stored': False,
             'content': content
         }])
 
@@ -145,7 +141,6 @@ class TestStoreFetchPredictions(BaseHardhatTestCase):
             **predictions[0],
             'model_id': model_id,
             'execution_start_at': execution_start_at,
-            'locally_stored': False,
             'content': content
         }])
 
