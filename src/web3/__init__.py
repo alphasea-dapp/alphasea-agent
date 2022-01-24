@@ -20,7 +20,7 @@ def create_w3(network_name, web3_provider_uri):
 
 def network_name_to_chain_id(name):
     return {
-        'matic': 137,
+        'polygon': 137,
         'mumbai': 80001,
         'hardhat': 31337,
     }[name]
@@ -28,7 +28,7 @@ def network_name_to_chain_id(name):
 
 def network_name_to_currency(name):
     return {
-        'matic': 'MATIC',
+        'polygon': 'MATIC',
         'mumbai': 'MATIC',
         'hardhat': 'ETH',
     }[name]
