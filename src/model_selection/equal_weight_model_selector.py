@@ -44,7 +44,7 @@ class EqualWeightModelSelector:
 
 class Problem(Annealer):
     def __init__(self, state, ret_numpy=None, price_numpy=None, assets=None, budget=None, random_state=None):
-        super().__init__(state)
+        super().__init__(state, disable_signal=True)
 
         self._ret_numpy = ret_numpy
         self._price_numpy = price_numpy
