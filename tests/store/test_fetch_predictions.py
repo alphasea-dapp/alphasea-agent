@@ -1,4 +1,5 @@
 from unittest import TestCase
+from unittest.mock import patch
 from ..helpers import (
     create_web3,
     create_contract,
@@ -15,6 +16,7 @@ from ..helpers import (
     BaseHardhatTestCase
 )
 from src.web3 import get_account_address
+from src.store.event_indexer import EventIndexer
 
 execution_start_at = get_future_execution_start_at_timestamp()
 content = 'abc'.encode()
@@ -160,3 +162,27 @@ class TestStoreFetchPredictions(BaseHardhatTestCase):
             execution_start_at=execution_start_at + 1,
         )
         self.assertEqual(predictions, [])
+
+    def test_without_fetch_events(self):
+        store = self.store
+
+        # fetch events
+        store.fetch_predictions(
+            tournament_id=get_tournament_id(),
+            execution_start_at=execution_start_at,
+        )
+
+        with patch.object(EventIndexer, '_fetch_events') as mocked_fetch_events:
+            predictions = store.fetch_predictions(
+                tournament_id=get_tournament_id(),
+                execution_start_at=execution_start_at,
+                without_fetch_events=True
+            )
+            mocked_fetch_events.assert_not_called()
+
+        self.assertEqual(predictions, [{
+            **predictions[0],
+            'model_id': model_id,
+            'execution_start_at': execution_start_at,
+            'content': content,
+        }])
