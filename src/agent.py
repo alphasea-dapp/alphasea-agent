@@ -14,19 +14,32 @@ from .market_data_store.data_fetcher_builder import DataFetcherBuilder
 from .market_data_store.market_data_store import MarketDataStore
 from .model_selection.equal_weight_model_selector import EqualWeightModelSelector
 from .model_selection.all_model_selector import AllModelSelector
+from .logger import create_null_logger
 
 
 class Agent:
 
     def __init__(self, w3=None, contract=None, logger=None):
+        if logger is None:
+            logger = create_null_logger()
 
         executor_evaluation_periods = int(os.getenv('ALPHASEA_EXECUTOR_EVALUATION_PERIODS'))
         executor_symbol_white_list = os.getenv('ALPHASEA_EXECUTOR_SYMBOL_WHITE_LIST').split(',')
         executor_budget_rate = float(os.getenv('ALPHASEA_EXECUTOR_BUDGET_RATE'))
+        executor_execution_cost = float(os.getenv('ALPHASEA_EXECUTOR_EXECUTION_COST'))
         network_name = os.getenv('ALPHASEA_NETWORK')
         chain_id = network_name_to_chain_id(network_name)
         start_block_number = int(os.getenv('ALPHASEA_START_BLOCK_NUMBER', '1'))
         tournament_id = 'crypto_daily'
+
+        logger.debug('executor_evaluation_periods {}'.format(executor_evaluation_periods))
+        logger.debug('executor_symbol_white_list {}'.format(executor_symbol_white_list))
+        logger.debug('executor_budget_rate {}'.format(executor_budget_rate))
+        logger.debug('executor_execution_cost {}'.format(executor_execution_cost))
+        logger.debug('network_name {}'.format(network_name))
+        logger.debug('chain_id {}'.format(chain_id))
+        logger.debug('start_block_number {}'.format(start_block_number))
+        logger.debug('tournament_id {}'.format(tournament_id))
 
         rate_limiter = RateLimiterGroup(
             limits=[
@@ -67,9 +80,10 @@ class Agent:
         )
 
         model_selector_name = os.getenv('ALPHASEA_EXECUTOR_MODEL_SELECTOR')
+        logger.debug('model_selector_name {}'.format(model_selector_name))
         if model_selector_name == 'equal_weight':
             model_selector = EqualWeightModelSelector(
-                execution_cost=float(os.getenv('ALPHASEA_EXECUTOR_EXECUTION_COST')),
+                execution_cost=executor_execution_cost,
                 assets=Web3.toWei(os.getenv('ALPHASEA_EXECUTOR_ASSETS'), 'ether'),
                 logger=logger,
             )

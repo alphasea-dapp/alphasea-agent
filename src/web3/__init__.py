@@ -12,7 +12,7 @@ from web3._utils.events import get_event_data
 def create_w3(network_name, web3_provider_uri):
     w3 = Web3(Web3.HTTPProvider(web3_provider_uri))
 
-    if network_name in ['mumbai']:
+    if network_name in ['mumbai', 'polygon']:
         w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
     return w3
