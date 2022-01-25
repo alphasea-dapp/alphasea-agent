@@ -29,7 +29,7 @@ agentを動かすには、dockerとdocker-composeが必要です。
 
 ## agentのインストール
 
-このリポジトリをクローンするだけでagentをインストールできます。
+alphasea-agentをクローンします。
 
 ```bash
 git clone https://github.com/alphasea-dapp/alphasea-agent
