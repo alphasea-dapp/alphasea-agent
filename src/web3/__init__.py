@@ -59,7 +59,7 @@ def get_account_address(account):
         return account
 
 
-def transact(func, options, rate_limit_func=None, gas_buffer=None):
+def transact(func, options, rate_limit_func=None, gas_buffer=None, max_priority_fee_scale=None):
     w3 = func.web3
     default_account = w3.eth.default_account
 
@@ -69,14 +69,25 @@ def transact(func, options, rate_limit_func=None, gas_buffer=None):
     rate_limit_func()
     if hasattr(default_account, 'key'):
         # local private key (not work with hardhat https://github.com/nomiclabs/hardhat/issues/1664)
-        nonce = w3.eth.get_transaction_count(get_account_address(default_account))
-        tx = func.buildTransaction({**options, 'nonce': nonce})
-        if gas_buffer is not None:
-            tx = func.buildTransaction({
+        options = {
+            **options,
+            'nonce': w3.eth.get_transaction_count(get_account_address(default_account))
+        }
+        if max_priority_fee_scale is not None:
+            options = {
                 **options,
-                'nonce': nonce,
+                'maxFeePerGas': int(max_priority_fee_scale * w3.eth.max_priority_fee) + (2 * w3.eth.get_block('latest')['baseFeePerGas']),
+                'maxPriorityFeePerGas': int(max_priority_fee_scale * w3.eth.max_priority_fee),
+            }
+        tx = func.buildTransaction(options)
+
+        if gas_buffer is not None:
+            options = {
+                **options,
                 'gas': w3.eth.estimate_gas(tx) + gas_buffer,
-            })
+            }
+            tx = func.buildTransaction(options)
+
         signed_tx = w3.eth.account.sign_transaction(tx, private_key=default_account.key)
         w3.eth.send_raw_transaction(signed_tx.rawTransaction)
         tx_hash = signed_tx.hash

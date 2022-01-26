@@ -94,3 +94,48 @@ class TestWeb3Transact(TestCase):
             'status': 1,
         })
 
+    def test_max_priority_fee_scale(self):
+        param_list = [
+            {
+                'modelId': self.model_id,
+                'tournamentId': get_tournament_id(),
+                'predictionLicense': 'CC0-1.0'
+            }
+        ]
+        receipt = transact(
+            self.contract.functions.createModels(param_list),
+            {
+                'from': get_account_address(self.w3.eth.default_account),
+                'chainId': chain_id,
+            },
+            max_priority_fee_scale=1.2345,
+        )
+
+        self.assertEqual(dict(receipt), {
+            **dict(receipt),
+            'status': 1,
+        })
+
+    def test_gas_buffer_and_max_priority_fee_scale(self):
+        param_list = [
+            {
+                'modelId': self.model_id,
+                'tournamentId': get_tournament_id(),
+                'predictionLicense': 'CC0-1.0'
+            }
+        ]
+        receipt = transact(
+            self.contract.functions.createModels(param_list),
+            {
+                'from': get_account_address(self.w3.eth.default_account),
+                'chainId': chain_id,
+            },
+            gas_buffer=10000,
+            max_priority_fee_scale=1.2345,
+        )
+
+        self.assertEqual(dict(receipt), {
+            **dict(receipt),
+            'status': 1,
+        })
+

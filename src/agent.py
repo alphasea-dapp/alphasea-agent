@@ -30,6 +30,7 @@ class Agent:
         network_name = os.getenv('ALPHASEA_NETWORK')
         chain_id = network_name_to_chain_id(network_name)
         start_block_number = int(os.getenv('ALPHASEA_START_BLOCK_NUMBER', '1'))
+        max_priority_fee_scale = float(os.getenv('ALPHASEA_MAX_PRIORITY_FEE_SCALE', '1'))
         tournament_id = 'crypto_daily'
 
         logger.debug('executor_evaluation_periods {}'.format(executor_evaluation_periods))
@@ -39,6 +40,7 @@ class Agent:
         logger.debug('network_name {}'.format(network_name))
         logger.debug('chain_id {}'.format(chain_id))
         logger.debug('start_block_number {}'.format(start_block_number))
+        logger.debug('max_priority_fee_scale {}'.format(max_priority_fee_scale))
         logger.debug('tournament_id {}'.format(tournament_id))
 
         rate_limiter = RateLimiterGroup(
@@ -62,6 +64,7 @@ class Agent:
                 os.getenv('REDIS_URL'),
                 namespace='store:'
             ),
+            max_priority_fee_scale=max_priority_fee_scale,
         )
 
         data_fetcher_builder = DataFetcherBuilder()

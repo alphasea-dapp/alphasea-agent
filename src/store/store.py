@@ -25,7 +25,7 @@ from ..web3 import get_account_address, transact
 class Store:
     def __init__(self, w3, contract, chain_id, logger=None,
                  rate_limiter=None, start_block_number=None,
-                 redis_client=None):
+                 redis_client=None, max_priority_fee_scale=None):
         self._w3 = w3
         self._contract = contract
         self._lock = threading.Lock()
@@ -40,6 +40,7 @@ class Store:
         self._rate_limiter = rate_limiter
         self._redis_client = redis_client
         self._chain_id = chain_id
+        self._max_priority_fee_scale = max_priority_fee_scale
 
         private_key_key = 'private_key'
         private_key = self._redis_client.get(private_key_key)
@@ -394,6 +395,7 @@ class Store:
             options=options,
             rate_limit_func=self._rate_limit,
             gas_buffer=20000,
+            max_priority_fee_scale=self._max_priority_fee_scale
         )
 
 

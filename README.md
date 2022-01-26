@@ -87,7 +87,7 @@ ALPHASEA_EXECUTOR_BUDGET_RATEは予測購入費用上限を表し、
 
 ウォレットのMATIC残高にALPHASEA_EXECUTOR_BUDGET_RATEをかけた分が、
 毎ラウンドの予測購入費用上限です。
-0.001だと1ヶ月で最大30%くらい使われる計算になります。
+1日12ラウンドあるので、例えば0.001だと1ヶ月で最大30%くらい使われる計算になります。
 (計算式: (1 - 0.001)^(12 * 30) = 0.7)
 
 ALPHASEA_EXECUTOR_BUDGET_RATEのデフォルト値は0なので、
@@ -164,6 +164,7 @@ environment variables (defined in docker-compose.yml)
 |ALPHASEA_EXECUTOR_ASSETS|モデル選択で使う運用資産額(単位ETH or MATIC)|
 |ALPHASEA_EXECUTOR_BUDGET_RATE|予測購入予算(ウォレット残高に対する割合)。これをゼロにすると購入が発生しない|
 |ALPHASEA_EXECUTOR_EVALUATION_PERIODS|モデル選択で使う過去成績の数|
+|ALPHASEA_MAX_PRIORITY_FEE_SCALE|maxPriorityFeePerGasを設定した値倍にする。トランザクション遅延対策|
 
 ## Development
 
