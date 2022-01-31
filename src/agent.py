@@ -115,9 +115,6 @@ class Agent:
         predictor = Predictor(
             store=store,
             tournament_id=tournament_id,
-            price_min=Web3.toWei(os.getenv('ALPHASEA_PREDICTOR_PRICE_MIN'), 'ether'),
-            price_increase_rate=float(os.getenv('ALPHASEA_PREDICTOR_PRICE_INCREASE_RATE')),
-            price_decrease_rate=float(os.getenv('ALPHASEA_PREDICTOR_PRICE_DECREASE_RATE')),
             logger=logger,
         )
 

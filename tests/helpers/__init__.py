@@ -97,8 +97,7 @@ def get_future_execution_start_at_timestamp():
 def get_prediction_time_shift():
     return -30 * 60
 
-
-def get_purchase_time_shift():
+def get_sending_time_shift():
     return -22 * 60
 
 

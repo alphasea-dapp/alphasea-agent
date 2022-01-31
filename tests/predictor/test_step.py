@@ -7,7 +7,7 @@ from ..helpers import (
     get_future_execution_start_at_timestamp,
     proceed_time,
     get_prediction_time_shift,
-    get_purchase_time_shift,
+    get_sending_time_shift,
     get_shipping_time_shift,
     get_publication_time_shift,
     get_tournament_id,
@@ -29,7 +29,6 @@ class TestPredictorStep(BaseHardhatTestCase):
         predictor = Predictor(
             store=store,
             tournament_id=get_tournament_id(),
-            price_min=100,
             time_func=lambda: predictor_time,
         )
 
@@ -37,7 +36,7 @@ class TestPredictorStep(BaseHardhatTestCase):
         execution_start_at = get_future_execution_start_at_timestamp()
         content = b"""position,symbol
 0.1,BTC"""
-        buffer_time = 4 * 60
+        buffer_time = 6 * 60
 
         predictor.submit_prediction(
             model_id=model_id,
@@ -57,33 +56,11 @@ class TestPredictorStep(BaseHardhatTestCase):
             'model_id': 'model1',
             'execution_start_at': execution_start_at,
         })
-        self.assertTrue(pd.isna(predictions.iloc[0]['content_key']))
-
-        # purchase
-        w3_purchaser = create_web3(account_index=1)
-        contract_purhcaser = create_contract(w3_purchaser)
-        store_purchaser = create_store(w3_purchaser, contract_purhcaser)
-
-        proceed_time(w3, execution_start_at + get_purchase_time_shift())
-        store_purchaser.create_purchases([dict(
-            model_id=model_id,
-            execution_start_at=execution_start_at,
-        )])
-        purchases = event_indexer.fetch_purchases()
-        self.assertTrue(pd.isna(purchases.iloc[0]['encrypted_content_key']))
-
-        # shipping
-        predictor_time = execution_start_at + get_shipping_time_shift() + buffer_time
-        proceed_time(w3, predictor_time)
-        predictor._step()
-
-        purchases = event_indexer.fetch_purchases()
-        self.assertFalse(pd.isna(purchases.iloc[0]['encrypted_content_key']))
+        self.assertEqual(event_indexer.fetch_prediction_key_publications().shape[0], 0)
 
         # publication
         predictor_time = execution_start_at + get_publication_time_shift() + buffer_time
         proceed_time(w3, predictor_time)
         predictor._step()
 
-        predictions = event_indexer.fetch_predictions()
-        self.assertFalse(pd.isna(predictions.iloc[0]['content_key']))
+        self.assertEqual(event_indexer.fetch_prediction_key_publications().shape[0], 1)
