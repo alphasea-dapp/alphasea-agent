@@ -6,6 +6,7 @@ class ModelSelectionParams:
         self.df_current = df_current
         self.random_state = random_state
         self.budget = budget
+        self.owner = None
 
         # df_ret: index: [execution_start_at], columns: model_id, values: ret
         # df_position: index: [execution_start_at], columns: model_id, values: position
