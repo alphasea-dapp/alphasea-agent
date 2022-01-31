@@ -6,7 +6,7 @@ from ..helpers import (
     get_future_execution_start_at_timestamp,
     proceed_time,
     get_prediction_time_shift,
-    get_purchase_time_shift,
+    get_sending_time_shift,
     get_shipping_time_shift,
     get_publication_time_shift,
     get_tournament_id,
@@ -97,22 +97,16 @@ class TestStoreFetchPredictions(BaseHardhatTestCase):
             'content': None,
         }])
 
-    def test_shipped(self):
+    def test_sent(self):
         store = self.store
         store_purchaser = self.store_purchaser
 
-        proceed_time(self.w3, execution_start_at + get_purchase_time_shift())
-        store_purchaser.create_purchases([dict(
-            model_id=model_id,
-            execution_start_at=execution_start_at,
-        )])
-
-        proceed_time(self.w3, execution_start_at + get_shipping_time_shift())
-        store.ship_purchases([dict(
-            model_id=model_id,
-            execution_start_at=execution_start_at,
-            purchaser=get_account_address(self.w3_purchaser.eth.default_account),
-        )])
+        proceed_time(self.w3, execution_start_at + get_sending_time_shift())
+        store.send_prediction_keys(
+            get_tournament_id(),
+            execution_start_at,
+            [store_purchaser.default_account_address()]
+        )
 
         predictions = store_purchaser.fetch_predictions(
             tournament_id=get_tournament_id(),
@@ -130,10 +124,10 @@ class TestStoreFetchPredictions(BaseHardhatTestCase):
         store_purchaser = self.store_purchaser
 
         proceed_time(self.w3, execution_start_at + get_publication_time_shift())
-        store.publish_predictions([dict(
-            model_id=model_id,
-            execution_start_at=execution_start_at,
-        )])
+        store.publish_prediction_key(
+            get_tournament_id(),
+            execution_start_at
+        )
 
         predictions = store_purchaser.fetch_predictions(
             tournament_id=get_tournament_id(),
