@@ -7,7 +7,6 @@ from ..helpers import (
     proceed_time,
     get_prediction_time_shift,
     get_sending_time_shift,
-    get_shipping_time_shift,
     get_publication_time_shift,
     get_tournament_id,
     get_chain_id,
@@ -56,7 +55,6 @@ class TestStoreFetchPredictions(BaseHardhatTestCase):
             model_id=model_id,
             execution_start_at=execution_start_at,
             content=content,
-            price=1,
         )])
 
     def test_locally_stored(self):

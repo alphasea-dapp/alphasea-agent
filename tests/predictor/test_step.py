@@ -8,7 +8,6 @@ from ..helpers import (
     proceed_time,
     get_prediction_time_shift,
     get_sending_time_shift,
-    get_shipping_time_shift,
     get_publication_time_shift,
     get_tournament_id,
     get_chain_id,

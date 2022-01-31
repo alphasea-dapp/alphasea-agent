@@ -8,8 +8,7 @@ from ..helpers import (
     get_future_execution_start_at_timestamp,
     proceed_time,
     get_prediction_time_shift,
-    get_purchase_time_shift,
-    get_shipping_time_shift,
+    get_sending_time_shift,
     get_publication_time_shift,
     get_tournament_id,
     create_store,
@@ -57,7 +56,6 @@ class TestExecutorFetchHistoricalPredictions(BaseHardhatTestCase):
                 model_id=model_id,
                 execution_start_at=execution_start_at,
                 content=invalid_content if days - 1 - i == invalid_day else content,
-                price=1
             )])
 
             if i == days - 1:
@@ -66,10 +64,10 @@ class TestExecutorFetchHistoricalPredictions(BaseHardhatTestCase):
             # publication
             if i > 0:
                 proceed_time(w3, execution_start_at - day_seconds + get_publication_time_shift())
-                store.publish_predictions([dict(
-                    model_id=model_id,
+                store.publish_prediction_key(
+                    get_tournament_id(),
                     execution_start_at=execution_start_at - day_seconds,
-                )])
+                )
 
         self.execution_start_at = execution_start_at
 

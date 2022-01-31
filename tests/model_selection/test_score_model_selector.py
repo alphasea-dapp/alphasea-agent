@@ -3,7 +3,7 @@ import random
 import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
-from src.model_selection.score_model_selector import ScoreModelSelector
+from src.model_selection.score_model_selector import ScoreModelSelector, default_scorer
 from src.executor.utils import create_model_selection_params
 
 
@@ -227,3 +227,7 @@ class TestScoreModelSelector(TestCase):
 
         receivers = selector.select_receivers(params)
         self.assertEqual(receivers.shape[0], 0)
+
+    def test_default_scorer_smoke(self):
+        default_scorer(np.array([-1, 0, 1]))
+        

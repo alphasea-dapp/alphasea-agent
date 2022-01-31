@@ -7,6 +7,9 @@ class AllModelSelector:
     def __init__(self):
         ...
 
+    def select_receivers(self, params):
+        return params.df_current['owner'].unique()
+
     def select_model(self, params):
         df_current = params.df_current
         model_count = df_current.shape[0]

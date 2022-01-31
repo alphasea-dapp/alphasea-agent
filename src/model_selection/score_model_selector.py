@@ -1,6 +1,15 @@
 import numpy as np
 import pandas as pd
 from ..logger import create_null_logger
+from .statistics import max_sprt_t_test_log_prob_ratio
+
+
+def default_scorer(x):
+    log_prob_ratio = max_sprt_t_test_log_prob_ratio(
+        x[::-1],
+        [0.01, 0.02, 0.04, 0.08, 0.16, 0.32]
+    )
+    return np.nanmax(log_prob_ratio)
 
 
 class ScoreModelSelector:
@@ -8,7 +17,7 @@ class ScoreModelSelector:
                  score_threshold=None,
                  scorer=None, logger=None):
         self._execution_cost = execution_cost
-        self._scorer = scorer
+        self._scorer = default_scorer if scorer is None else scorer
         self._score_threshold = score_threshold
         self._logger = create_null_logger() if logger is None else logger
 
@@ -30,7 +39,7 @@ class ScoreModelSelector:
         df_current = params.df_current.copy()
         df_current['score'] = np.nan
         for model_id in df_ret.columns:
-            score = self._scorer(df_ret[model_id])
+            score = self._scorer(df_ret[model_id].values)
             df_current.loc[model_id, 'score'] = score
 
             self._logger.debug('{} mean {} std {} sharpe {} score {}'.format(
@@ -39,7 +48,7 @@ class ScoreModelSelector:
                 df_ret[model_id].std(),
                 df_ret[model_id].mean() / (1e-37 + df_ret[model_id].std()),
                 score
-                ))
+            ))
 
         if params.owner is None:
             reference_score = df_current['score'].max()

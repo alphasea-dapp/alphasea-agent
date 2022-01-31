@@ -215,6 +215,10 @@ class Store:
 
             params_list2 = []
             for receiver in receivers:
+                if receiver == self.default_account_address():
+                    self._logger.debug('send_prediction_keys skipped because receiver is me')
+                    continue
+
                 public_keys = self._event_indexer.fetch_public_keys(
                     owner=receiver
                 )

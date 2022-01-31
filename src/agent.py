@@ -12,20 +12,19 @@ from .executor.executor import Executor
 from .predictor.predictor import Predictor
 from .market_data_store.data_fetcher_builder import DataFetcherBuilder
 from .market_data_store.market_data_store import MarketDataStore
-from .model_selection.equal_weight_model_selector import EqualWeightModelSelector
+from .model_selection.score_model_selector import ScoreModelSelector
 from .model_selection.all_model_selector import AllModelSelector
 from .logger import create_null_logger
+from .model_selection.statistics import max_sprt_t_test_log_prob_ratio
 
 
 class Agent:
-
     def __init__(self, w3=None, contract=None, logger=None):
         if logger is None:
             logger = create_null_logger()
 
         executor_evaluation_periods = int(os.getenv('ALPHASEA_EXECUTOR_EVALUATION_PERIODS'))
         executor_symbol_white_list = os.getenv('ALPHASEA_EXECUTOR_SYMBOL_WHITE_LIST').split(',')
-        executor_budget_rate = float(os.getenv('ALPHASEA_EXECUTOR_BUDGET_RATE'))
         executor_execution_cost = float(os.getenv('ALPHASEA_EXECUTOR_EXECUTION_COST'))
         network_name = os.getenv('ALPHASEA_NETWORK')
         chain_id = network_name_to_chain_id(network_name)
@@ -35,7 +34,6 @@ class Agent:
 
         logger.debug('executor_evaluation_periods {}'.format(executor_evaluation_periods))
         logger.debug('executor_symbol_white_list {}'.format(executor_symbol_white_list))
-        logger.debug('executor_budget_rate {}'.format(executor_budget_rate))
         logger.debug('executor_execution_cost {}'.format(executor_execution_cost))
         logger.debug('network_name {}'.format(network_name))
         logger.debug('chain_id {}'.format(chain_id))
@@ -75,8 +73,7 @@ class Agent:
             logger=logger,
             execution_lag_sec=(
                     tournament['prediction_time']
-                    + tournament['purchase_time']
-                    + tournament['shipping_time']
+                    + tournament['sending_time']
                     + tournament['execution_preparation_time']
             ),
             execution_time_sec=tournament['execution_time'],
@@ -84,10 +81,10 @@ class Agent:
 
         model_selector_name = os.getenv('ALPHASEA_EXECUTOR_MODEL_SELECTOR')
         logger.debug('model_selector_name {}'.format(model_selector_name))
-        if model_selector_name == 'equal_weight':
-            model_selector = EqualWeightModelSelector(
+        if model_selector_name == 'score':
+            model_selector = ScoreModelSelector(
                 execution_cost=executor_execution_cost,
-                assets=Web3.toWei(os.getenv('ALPHASEA_EXECUTOR_ASSETS'), 'ether'),
+                score_threshold=float(os.getenv('ALPHASEA_EXECUTOR_SCORE_THRESHOLD')),
                 logger=logger,
             )
         elif model_selector_name == 'all_model':
@@ -104,7 +101,6 @@ class Agent:
             model_selector=model_selector,
             market_data_store=market_data_store,
             symbol_white_list=executor_symbol_white_list,
-            budget_rate=executor_budget_rate,
             logger=logger,
             redis_client=StrictRedis.from_url(
                 os.getenv('REDIS_URL'),

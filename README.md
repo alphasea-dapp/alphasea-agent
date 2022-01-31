@@ -78,20 +78,8 @@ Predictor(予測投稿)だけ行う場合はこの設定は不要です。
 以下の内容の.envファイルをalphasea-agentディレクトリ直下に作成します。
 
 ```text
-ALPHASEA_EXECUTOR_BUDGET_RATE=0.001
+
 ```
-
-ALPHASEA_EXECUTOR_BUDGET_RATEは予測購入費用上限を表し、
-この設定が0より大きい場合、
-毎ラウンド、予算内で自動で予測購入が行われるようになります。
-
-ウォレットのMATIC残高にALPHASEA_EXECUTOR_BUDGET_RATEをかけた分が、
-毎ラウンドの予測購入費用上限です。
-1日12ラウンドあるので、例えば0.001だと1ヶ月で最大30%くらい使われる計算になります。
-(計算式: (1 - 0.001)^(12 * 30) = 0.7)
-
-ALPHASEA_EXECUTOR_BUDGET_RATEのデフォルト値は0なので、
-設定しない場合は予測購入は行われません。
 
 \* .envはdocker-composeの仕組みです。詳しくは [docker.jp environment variables](https://docs.docker.jp/compose/environment-variables.html#env) 参照
 
@@ -158,9 +146,8 @@ environment variables (defined in docker-compose.yml)
 |ALPHASEA_CONTRACT_ABI|alphasea polygon contract ABI|
 |ALPHASEA_EXECUTOR_SYMBOL_WHITE_LIST|モデル選択で使う銘柄ホワイトリスト|
 |ALPHASEA_EXECUTOR_EXECUTION_COST|モデル選択で使う取引コスト|
-|ALPHASEA_EXECUTOR_ASSETS|モデル選択で使う運用資産額(単位ETH or MATIC)|
-|ALPHASEA_EXECUTOR_BUDGET_RATE|予測購入予算(ウォレット残高に対する割合)。これをゼロにすると購入が発生しない|
 |ALPHASEA_EXECUTOR_EVALUATION_PERIODS|モデル選択で使う過去成績の数|
+|ALPHASEA_EXECUTOR_SCORE_THRESHOLD|予測を共有する基準|
 |ALPHASEA_MAX_PRIORITY_FEE_SCALE|maxPriorityFeePerGasを設定した値倍にする。トランザクション遅延対策|
 
 ## Development
