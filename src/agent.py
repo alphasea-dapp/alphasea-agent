@@ -60,7 +60,7 @@ class Agent:
             start_block_number=start_block_number,
             redis_client=StrictRedis.from_url(
                 os.getenv('REDIS_URL'),
-                namespace='store:'
+                namespace='store:{}:'.format(contract.address)
             ),
             max_priority_fee_scale=max_priority_fee_scale,
         )
@@ -104,7 +104,7 @@ class Agent:
             logger=logger,
             redis_client=StrictRedis.from_url(
                 os.getenv('REDIS_URL'),
-                namespace='executor:'
+                namespace='executor:{}:'.format(contract.address)
             ),
         )
 

@@ -173,7 +173,7 @@ class EventIndexer:
                 to_block=to_block
             )
 
-        key = 'event_indexer:{}'.format(from_block, to_block)
+        key = 'event_indexer:{}:{}'.format(from_block, to_block)
         value = self._redis_client.get(key)
         if value is None:
             self._rate_limit()
