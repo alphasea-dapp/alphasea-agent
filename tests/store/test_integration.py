@@ -6,8 +6,7 @@ from ..helpers import (
     get_future_execution_start_at_timestamp,
     proceed_time,
     get_prediction_time_shift,
-    get_purchase_time_shift,
-    get_shipping_time_shift,
+    get_sending_time_shift,
     get_publication_time_shift,
     get_tournament_id,
     get_chain_id,
@@ -43,10 +42,9 @@ class TestStoreIntegration(BaseHardhatTestCase):
             model_id=model_id,
             execution_start_at=execution_start_at,
             content=content,
-            price=1
         )])
 
-        # select purchase
+        # select send
         result = store_purchaser.fetch_predictions(
             tournament_id=get_tournament_id(),
             execution_start_at=execution_start_at
@@ -54,43 +52,22 @@ class TestStoreIntegration(BaseHardhatTestCase):
         self.assertEqual(result, [{
             **result[0],
             'model_id': model_id,
-            'price': 1,
             'content': None,
         }])
 
-        # purchase
-        proceed_time(w3, execution_start_at + get_purchase_time_shift())
-        store_purchaser.create_purchases([dict(
-            model_id=model_id,
-            execution_start_at=execution_start_at,
-        )])
-
-        # select ship
-        result = store.fetch_purchases_to_ship(
-            tournament_id=get_tournament_id(),
-            execution_start_at=execution_start_at
+        # send
+        proceed_time(w3, execution_start_at + get_sending_time_shift())
+        store.send_prediction_keys(
+            get_tournament_id(),
+            execution_start_at,
+            [store_purchaser.default_account_address()],
         )
-        self.assertEqual(result, [{
-            **result[0],
-            'model_id': model_id,
-            'execution_start_at': execution_start_at,
-            'purchaser': w3_purchaser.eth.accounts[1],
-        }])
 
-        # shipping
-        proceed_time(w3, execution_start_at + get_shipping_time_shift())
-        store.ship_purchases([dict(
-            model_id=model_id,
-            execution_start_at=execution_start_at,
-            purchaser=get_account_address(w3_purchaser.eth.default_account),
-        )])
-
-        # check shipped purchase
+        # check if shipped
         result = store_purchaser.fetch_predictions(
             tournament_id=get_tournament_id(),
             execution_start_at=execution_start_at
         )
-        result = [x for x in result if ~pd.isna(x['encrypted_content_key'])]
         self.assertEqual(result, [{
             **result[0],
             'model_id': model_id,
@@ -99,21 +76,11 @@ class TestStoreIntegration(BaseHardhatTestCase):
         }])
 
         # publication
-        result = store.fetch_predictions_to_publish(
-            tournament_id=get_tournament_id(),
-            execution_start_at=execution_start_at,
-        )
-        self.assertEqual(result, [{
-            **result[0],
-            'model_id': model_id,
-            'execution_start_at': execution_start_at,
-        }])
-
         proceed_time(w3, execution_start_at + get_publication_time_shift())
-        store.publish_predictions([dict(
-            model_id=model_id,
-            execution_start_at=execution_start_at,
-        )])
+        store.publish_prediction_key(
+            get_tournament_id(),
+            execution_start_at,
+        )
 
         # check published prediction
         result = store.fetch_predictions(
@@ -123,6 +90,5 @@ class TestStoreIntegration(BaseHardhatTestCase):
         self.assertEqual(result, [{
             **result[0],
             'model_id': model_id,
-            'price': 1,
             'content': content,
         }])

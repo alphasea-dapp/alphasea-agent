@@ -42,8 +42,8 @@ class TestExecutorCreateModelSelectionParams(TestCase):
         )
 
         expected_ret = pd.DataFrame([
-            [2, 0.1, 0.2, 0.0],
-            [3, 0.0, 0.0, 0.3],
+            [2, 0.1, 0.2, np.nan],
+            [3, np.nan, np.nan, 0.3],
         ], columns=['execution_start_at', 'BTC1', 'ETH1', 'BTC2']).set_index('execution_start_at')
         expected_ret.columns = pd.MultiIndex.from_tuples(
             [
@@ -55,8 +55,8 @@ class TestExecutorCreateModelSelectionParams(TestCase):
         )
 
         expected_pos = pd.DataFrame([
-            [2, 2.0, 3.0, 0.0],
-            [3, 0.0, 0.0, 4.0],
+            [2, 2.0, 3.0, np.nan],
+            [3, np.nan, np.nan, 4.0],
         ], columns=['execution_start_at', 'BTC1', 'ETH1', 'BTC2']).set_index('execution_start_at')
         expected_pos.columns = pd.MultiIndex.from_tuples(
             [

@@ -28,8 +28,7 @@ def _pivot_df(df, execution_start_ats, values):
         columns=['model_id', 'symbol'],
         values=values
     )
-    df = df.fillna(0)
-    df = df.reindex(execution_start_ats, fill_value=0)
+    df = df.reindex(execution_start_ats)
     df = df.sort_index(axis=1)
     return df
 
@@ -50,8 +49,7 @@ def calc_target_positions(t, df_blended_list):
 def floor_to_execution_start_at(timestamp, tournament):
     execution_lag = (
             tournament['prediction_time']
-            + tournament['purchase_time']
-            + tournament['shipping_time']
+            + tournament['sending_time']
             + tournament['execution_preparation_time']
     )
     execution_start_at = (
@@ -113,11 +111,9 @@ def fetch_current_predictions(store, tournament_id, execution_start_at, without_
     )
     df_current = pd.DataFrame(
         current_predictions,
-        columns=['model_id', 'price', 'content']
+        columns=['model_id', 'owner', 'content']
     ).set_index('model_id')
     df_current = df_current.sort_index()
-    # すでにcontentにアクセスできる場合は購入費用ゼロ
-    df_current.loc[~pd.isna(df_current['content']), 'price'] = 0
     return df_current
 
 

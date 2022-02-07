@@ -4,6 +4,7 @@ import pandas as pd
 from nacl.public import PublicKey, PrivateKey, SealedBox
 from nacl.secret import SecretBox
 import nacl.utils
+from nacl.exceptions import CryptoError
 import pickle
 from .event_indexer import EventIndexer
 from ..logger import create_null_logger
@@ -50,40 +51,42 @@ class Store:
         else:
             self._private_key = PrivateKey(private_key)
 
+        self._change_public_key()
+
     # redis
 
-    def _get_prediction_info(self, model_id, execution_start_at):
-        key = _prediction_info_key(model_id, execution_start_at)
+    def _prediction_key_info(self, tournament_id, execution_start_at, create=False):
+        key = _prediction_key_info_key(tournament_id, execution_start_at)
         value = self._redis_client.get(key)
-        if value is None:
-            return None
-        return pickle.loads(value)
 
-    def _set_prediction_info(self, model_id, execution_start_at, info):
-        key = _prediction_info_key(model_id, execution_start_at)
+        if value is not None:
+            return pickle.loads(value)
+
+        if not create:
+            return None
+
+        content_key_generator = nacl.utils.random(32)
+        info = {
+            'content_key_generator': content_key_generator,
+            'content_key': Web3.solidityKeccak(
+                ['bytes', 'address'],
+                [content_key_generator, self.default_account_address()]
+            )
+        }
         self._redis_client.set(key, pickle.dumps(info))
         self._redis_client.expireat(key, execution_start_at + 2 * 24 * 60 * 60)
+        return info
 
     # read
 
     def get_balance(self):
         with self._lock:
             self._rate_limit()
-            return self._w3.eth.get_balance(self._default_account_address())
+            return self._w3.eth.get_balance(self.default_account_address())
 
     def fetch_tournament(self, tournament_id: str):
         with self._lock:
             return self._event_indexer.fetch_tournaments(tournament_id=tournament_id).iloc[0].to_dict()
-
-    def fetch_last_prediction(self, model_id: str, max_execution_start_at: int):
-        with self._lock:
-            predictions = self._event_indexer.fetch_predictions(model_id=model_id)
-            predictions = predictions[predictions['execution_start_at'] <= max_execution_start_at]
-            predictions = predictions[
-                predictions['execution_start_at'] % (24 * 60 * 60) == max_execution_start_at % (24 * 60 * 60)]
-            if predictions.shape[0] == 0:
-                return None
-            return self._predictions_to_dict_list(predictions)[0]
 
     def fetch_predictions(self, tournament_id: str, execution_start_at: int, without_fetch_events: bool = False):
         with self._lock:
@@ -98,37 +101,23 @@ class Store:
             predictions = predictions.loc[predictions['model_id'].isin(models['model_id'].unique())]
             return self._predictions_to_dict_list(predictions)
 
-    def fetch_predictions_to_publish(self, tournament_id: str, execution_start_at: int):
-        with self._lock:
-            models = self._event_indexer.fetch_models(
-                tournament_id=tournament_id,
-                owner=self._default_account_address(),
-            )
-            predictions = self._event_indexer.fetch_predictions(
-                execution_start_at=execution_start_at,
-                without_fetch_events=True,
-            )
-            predictions = predictions.loc[predictions['model_id'].isin(models['model_id'].unique())]
-            predictions = predictions.loc[predictions['content_key'].isna()]
-            return self._predictions_to_dict_list(predictions)
-
-    def fetch_purchases_to_ship(self, tournament_id: str, execution_start_at: int):
-        with self._lock:
-            my_models = self._event_indexer.fetch_models(
-                tournament_id=tournament_id, owner=self._default_account_address())
-            purchases = self._event_indexer.fetch_purchases(
-                execution_start_at=execution_start_at,
-                without_fetch_events=True,
-            )
-            purchases = purchases.loc[purchases['model_id'].isin(my_models['model_id'].unique())]
-            purchases = purchases.loc[purchases['encrypted_content_key'].isna()]
-
-            results = []
-            for idx, purchase in purchases.iterrows():
-                results.append(purchase.to_dict())
-            return results
-
     # write
+
+    def _change_public_key(self):
+        current_public_key = bytes(self._private_key.public_key)
+
+        public_keys = self._event_indexer.fetch_public_keys(owner=self.default_account_address())
+        if public_keys.shape[0] > 0 and public_keys.iloc[0]['public_key'] == current_public_key:
+            self._logger.debug('public_key not changed')
+            return {}
+
+        receipt = self._transact(
+            self._contract.functions.changePublicKey(current_public_key),
+            self._default_tx_options()
+        )
+        self._logger.debug(
+            'Store.change_public_key done receipt {}'.format(dict(receipt)))
+        return {'receipt': dict(receipt)}
 
     def create_models_if_not_exist(self, params_list):
         self._logger.debug('Store.create_models_if_not_exist called {}'.format(params_list))
@@ -173,30 +162,22 @@ class Store:
                 model_id = params['model_id']
                 execution_start_at = params['execution_start_at']
                 content = params['content']
-                price = params['price']
 
-                content_key_generator = nacl.utils.random(32)
-                content_key = Web3.solidityKeccak(
-                    ['bytes', 'string'],
-                    [content_key_generator, model_id]
-                )
-                box = SecretBox(content_key)
-                encrypted_content = box.encrypt(content)
+                models = self._event_indexer.fetch_models(model_id=model_id)
+                tournament_id = models.iloc[0]['tournament_id']
 
-                self._set_prediction_info(
-                    model_id=model_id,
+                info = self._prediction_key_info(
+                    tournament_id=tournament_id,
                     execution_start_at=execution_start_at,
-                    info={
-                        'content_key_generator': content_key_generator,
-                        'content_key': content_key,
-                    }
+                    create=True,
                 )
+                box = SecretBox(info['content_key'])
+                encrypted_content = box.encrypt(content)
 
                 params_list2.append({
                     'modelId': model_id,
                     'executionStartAt': execution_start_at,
                     'encryptedContent': encrypted_content,
-                    'price': price,
                 })
 
             if len(params_list2) == 0:
@@ -209,75 +190,47 @@ class Store:
             self._logger.debug('Store.create_predictions done {} receipt {}'.format(params_list2, dict(receipt)))
             return {'receipt': dict(receipt)}
 
-    def create_purchases(self, params_list):
-        self._logger.debug('Store.create_purchases called {}'.format(params_list))
+    def send_prediction_keys(self, tournament_id, execution_start_at, receivers):
+        self._logger.debug('Store.send_prediction_keys called {} {} {}'.format(tournament_id, execution_start_at, receivers))
 
         with self._lock:
-            params_list2 = []
-            sum_price = None
-            for params in params_list:
-                model_id = params['model_id']
-                execution_start_at = params['execution_start_at']
-
-                prediction = self._event_indexer.fetch_predictions(
-                    model_id=model_id,
-                    execution_start_at=execution_start_at,
-                ).iloc[0]
-                price = prediction['price']
-                if sum_price is None:
-                    sum_price = price
-                else:
-                    sum_price += price
-
-                params_list2.append({
-                    'modelId': model_id,
-                    'executionStartAt': execution_start_at,
-                    'publicKey': bytes(self._private_key.public_key),
-                })
-
-            if len(params_list2) == 0:
+            publications = self._event_indexer.fetch_prediction_key_publications(
+                owner=self.default_account_address(),
+                tournament_id=tournament_id,
+                execution_start_at=execution_start_at
+            )
+            if publications.shape[0] > 0:
+                self._logger.debug('send_prediction_keys skipped because already published')
                 return {}
 
-            receipt = self._transact(
-                self._contract.functions.createPurchases(params_list2),
-                {
-                    **self._default_tx_options(),
-                    'value': sum_price,
-                }
+            prediction_info = self._prediction_key_info(
+                tournament_id=tournament_id,
+                execution_start_at=execution_start_at,
             )
-            self._logger.debug(
-                'Store.create_purchases done {} receipt {} sum_price {}'.format(params_list2, dict(receipt), sum_price))
-            return {'receipt': dict(receipt), 'sum_price': sum_price}
+            if prediction_info is None:
+                self._logger.debug('send_prediction_keys skipped because prediction_info is None')
+                return {}
 
-    def ship_purchases(self, params_list):
-        self._logger.debug('Store.ship_purchases called {}'.format(params_list))
+            content_key = prediction_info['content_key']
 
-        with self._lock:
             params_list2 = []
-            for params in params_list:
-                model_id = params['model_id']
-                execution_start_at = params['execution_start_at']
-                purchaser = params['purchaser']
+            for receiver in receivers:
+                if receiver == self.default_account_address():
+                    self._logger.debug('send_prediction_keys skipped because receiver is me')
+                    continue
 
-                purchase = self._event_indexer.fetch_purchases(
-                    model_id=model_id,
-                    execution_start_at=execution_start_at,
-                    purchaser=purchaser,
-                ).iloc[0]
-
-                prediction_info = self._get_prediction_info(
-                    model_id=model_id,
-                    execution_start_at=execution_start_at
+                public_keys = self._event_indexer.fetch_public_keys(
+                    owner=receiver
                 )
-                content_key = prediction_info['content_key']
+                if public_keys.shape[0] == 0:
+                    self._logger.debug('send_prediction_keys skipped because public key empty')
+                    continue
 
-                sealed_box = SealedBox(PublicKey(purchase['public_key']))
+                sealed_box = SealedBox(PublicKey(public_keys.iloc[0]['public_key']))
                 encrypted_content_key = sealed_box.encrypt(content_key)
 
                 params_list2.append({
-                    'modelId': model_id,
-                    'executionStartAt': execution_start_at,
-                    'purchaser': purchaser,
+                    'receiver': receiver,
                     'encryptedContentKey': encrypted_content_key,
                 })
 
@@ -285,89 +238,124 @@ class Store:
                 return {}
 
             receipt = self._transact(
-                self._contract.functions.shipPurchases(params_list2),
+                self._contract.functions.sendPredictionKeys(
+                    tournament_id,
+                    execution_start_at,
+                    params_list2,
+                ),
                 self._default_tx_options()
             )
-            self._logger.debug('Store.ship_purchases done {} receipt {}'.format(params_list2, dict(receipt)))
+            self._logger.debug('Store.send_prediction_keys done {} receipt {}'.format(params_list2, dict(receipt)))
             return {'receipt': dict(receipt)}
 
-    def publish_predictions(self, params_list):
-        self._logger.debug('Store.publish_predictions called {}'.format(params_list))
+    def publish_prediction_key(self, tournament_id: str, execution_start_at: int):
+        self._logger.debug('Store.publish_prediction_key called {} {}'.format(tournament_id, execution_start_at))
 
         with self._lock:
-            params_list2 = []
-            for params in params_list:
-                prediction_info = self._get_prediction_info(
-                    model_id=params['model_id'],
-                    execution_start_at=params['execution_start_at']
-                )
-                content_key_generator = prediction_info['content_key_generator']
-                params_list2.append({
-                    'modelId': params['model_id'],
-                    'executionStartAt': params['execution_start_at'],
-                    'contentKeyGenerator': content_key_generator,
-                })
+            publications = self._event_indexer.fetch_prediction_key_publications(
+                owner=self.default_account_address(),
+                tournament_id=tournament_id,
+                execution_start_at=execution_start_at,
+            )
+            if publications.shape[0] > 0:
+                self._logger.debug('Store.publish_prediction_key skipped because already published.')
+                return {}
 
-            if len(params_list2) == 0:
+            prediction_info = self._prediction_key_info(
+                tournament_id=tournament_id,
+                execution_start_at=execution_start_at,
+            )
+            if prediction_info is None:
+                self._logger.debug('publish_prediction_key skipped because prediction_info is None')
+                return {}
+
+            models = self._event_indexer.fetch_models(
+                owner=self.default_account_address(),
+                tournament_id=tournament_id,
+            )
+            predictions = self._event_indexer.fetch_predictions(
+                execution_start_at=execution_start_at,
+            )
+            if predictions[predictions['model_id'].isin(models['model_id'])].shape[0] == 0:
+                self._logger.debug('publish_prediction_key skipped because no predictions')
                 return {}
 
             receipt = self._transact(
-                self._contract.functions.publishPredictions(params_list2),
+                self._contract.functions.publishPredictionKey(
+                    tournament_id,
+                    execution_start_at,
+                    prediction_info['content_key_generator']
+                ),
                 self._default_tx_options()
             )
-            self._logger.debug('Store.publish_predictions done {} receipt {}'.format(params_list2, dict(receipt)))
+            self._logger.debug('Store.publish_predictions done {} receipt {}'.format(prediction_info['content_key_generator'], dict(receipt)))
             return {'receipt': dict(receipt)}
 
     def _predictions_to_dict_list(self, predictions):
         predictions = predictions.copy()
 
-        # 自分の予測はplaintextをくっつける
-        for idx in predictions.index:
-            model_id = predictions.loc[idx, 'model_id']
-            execution_start_at = predictions.loc[idx, 'execution_start_at']
-            prediction_info = self._get_prediction_info(
-                model_id=model_id,
-                execution_start_at=execution_start_at
-            )
-            if prediction_info is not None:
-                content_key = prediction_info['content_key']
-                predictions.loc[idx, 'content_key'] = content_key
-
-        # ship済みであればplaintextをくっつける
-        my_purchases = self._event_indexer.fetch_purchases(
-            purchaser=self._default_account_address(),
-            public_key=bytes(self._private_key.public_key),
+        # modelをjoin
+        models = self._event_indexer.fetch_models(
             without_fetch_events=True,
         )
-        my_purchases = my_purchases.loc[~my_purchases['encrypted_content_key'].isna()]
         predictions = predictions.merge(
-            my_purchases[['model_id', 'execution_start_at', 'encrypted_content_key']],
-            on=['model_id', 'execution_start_at'],
+            models[['model_id', 'owner', 'tournament_id']],
+            on=['model_id'],
             how='left'
         )
 
-        # 購入数を追加
-        purchases = self._event_indexer.fetch_purchases(
-            without_fetch_events=True
+        # published prediction
+        publications = self._event_indexer.fetch_prediction_key_publications(
+            without_fetch_events=True,
         )
-        purchase_count = purchases.groupby(['model_id', 'execution_start_at'])['purchaser'].count()
-        predictions = predictions.join(
-            purchase_count.rename('purchase_count'),
-            on=['model_id', 'execution_start_at'],
+        predictions = predictions.merge(
+            publications[['owner', 'tournament_id', 'execution_start_at', 'content_key']],
+            on=['owner', 'tournament_id', 'execution_start_at'],
             how='left'
         )
-        predictions['purchase_count'] = predictions['purchase_count'].fillna(0)
+
+        # 自分の予測はcontent_keyをくっつける
+        for idx in predictions.loc[predictions['owner'] == self.default_account_address()].index:
+            tournament_id = predictions.loc[idx, 'tournament_id']
+            execution_start_at = predictions.loc[idx, 'execution_start_at']
+
+            prediction_key_info = self._prediction_key_info(
+                tournament_id=tournament_id,
+                execution_start_at=execution_start_at
+            )
+            if prediction_key_info is None:
+                continue
+
+            content_key = prediction_key_info['content_key']
+            predictions.loc[idx, 'content_key'] = content_key
+
+        # sendされたものはcontent_keyをjoin
+        sendings = self._event_indexer.fetch_prediction_key_sendings(
+            receiver=self.default_account_address(),
+            without_fetch_events=True,
+        )
+        predictions = predictions.merge(
+            sendings[['owner', 'tournament_id', 'execution_start_at', 'encrypted_content_key']],
+            on=['owner', 'tournament_id', 'execution_start_at'],
+            how='left'
+        )
 
         results = []
         for _, prediction in predictions.iterrows():
             content = None
             if pd.isna(prediction['content_key']) and not pd.isna(prediction['encrypted_content_key']):
                 unseal_box = SealedBox(self._private_key)
-                prediction['content_key'] = unseal_box.decrypt(prediction['encrypted_content_key'])
+                try:
+                    prediction['content_key'] = unseal_box.decrypt(prediction['encrypted_content_key'])
+                except CryptoError as e:
+                    self._logger.warn('failed to decrypt encrypted_content_key. ignored {}'.format(e))
 
             if not pd.isna(prediction['content_key']):
                 box = SecretBox(prediction['content_key'])
-                content = box.decrypt(prediction['encrypted_content'])
+                try:
+                    content = box.decrypt(prediction['encrypted_content'])
+                except CryptoError as e:
+                    self._logger.warn('failed to decrypt encrypted_content. ignored {}'.format(e))
 
             results.append({
                 **prediction.to_dict(),
@@ -376,12 +364,12 @@ class Store:
 
         return results
 
-    def _default_account_address(self):
+    def default_account_address(self):
         return get_account_address(self._w3.eth.default_account)
 
     def _default_tx_options(self):
         return {
-            'from': self._default_account_address(),
+            'from': self.default_account_address(),
             'chainId': self._chain_id,
         }
 
@@ -399,5 +387,5 @@ class Store:
         )
 
 
-def _prediction_info_key(model_id, execution_start_at):
-    return 'prediction_info:{}:{}'.format(model_id, execution_start_at)
+def _prediction_key_info_key(tournament_id, execution_start_at):
+    return 'prediction_key_info:{}:{}'.format(tournament_id, execution_start_at)

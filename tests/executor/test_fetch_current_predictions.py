@@ -7,8 +7,7 @@ from ..helpers import (
     get_future_execution_start_at_timestamp,
     proceed_time,
     get_prediction_time_shift,
-    get_purchase_time_shift,
-    get_shipping_time_shift,
+    get_sending_time_shift,
     get_publication_time_shift,
     get_tournament_id,
     create_store,
@@ -37,6 +36,7 @@ class TestExecutorFetchCurrentPredictions(BaseHardhatTestCase):
         w3_other = create_web3(account_index=1)
         contract_other = create_contract(w3_other)
         store_other = create_store(w3_other, contract_other)
+        self.store_other = store_other
 
         # predict
         proceed_time(w3, execution_start_at + get_prediction_time_shift())
@@ -49,7 +49,6 @@ class TestExecutorFetchCurrentPredictions(BaseHardhatTestCase):
             model_id=model_id,
             execution_start_at=execution_start_at,
             content=content,
-            price=1,
         )])
 
         # other predict
@@ -62,7 +61,6 @@ class TestExecutorFetchCurrentPredictions(BaseHardhatTestCase):
             model_id=model_id_other,
             execution_start_at=execution_start_at,
             content=content,
-            price=1,
         )])
 
     def test_ok(self):
@@ -73,9 +71,9 @@ class TestExecutorFetchCurrentPredictions(BaseHardhatTestCase):
         )
 
         expected = pd.DataFrame([
-            [model_id, 0, content],
-            [model_id_other, 1, None],
-        ], columns=['model_id', 'price', 'content']).set_index('model_id')
+            [model_id, self.store.default_account_address(), content],
+            [model_id_other, self.store_other.default_account_address(), None],
+        ], columns=['model_id', 'owner', 'content']).set_index('model_id')
 
         assert_frame_equal(df_current, expected)
 
@@ -88,7 +86,7 @@ class TestExecutorFetchCurrentPredictions(BaseHardhatTestCase):
 
         expected = pd.DataFrame(
             [],
-            columns=['model_id', 'price', 'content']
+            columns=['model_id', 'owner', 'content']
         ).set_index('model_id')
 
         assert_frame_equal(df_current, expected)
@@ -102,7 +100,7 @@ class TestExecutorFetchCurrentPredictions(BaseHardhatTestCase):
 
         expected = pd.DataFrame(
             [],
-            columns=['model_id', 'price', 'content']
+            columns=['model_id', 'owner', 'content']
         ).set_index('model_id')
 
         assert_frame_equal(df_current, expected)

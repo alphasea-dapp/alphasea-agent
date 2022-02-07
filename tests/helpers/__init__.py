@@ -98,12 +98,12 @@ def get_prediction_time_shift():
     return -30 * 60
 
 
-def get_purchase_time_shift():
+def get_sending_time_shift():
     return -22 * 60
 
 
-def get_shipping_time_shift():
-    return -14 * 60
+def get_preparation_time_shift():
+    return -6 * 60
 
 
 def get_publication_time_shift():

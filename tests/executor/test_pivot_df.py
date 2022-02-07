@@ -19,8 +19,8 @@ class TestExecutorPivotDf(TestCase):
         df_ret = _pivot_df(df, execution_start_ats, 'ret')
 
         expected = pd.DataFrame([
-            [2, 2.0, 3.0, 0.0],
-            [3, 0.0, 0.0, 4.0],
+            [2, 2.0, 3.0, np.nan],
+            [3, np.nan, np.nan, 4.0],
         ], columns=['execution_start_at', 'BTC1', 'ETH1', 'BTC2']).set_index('execution_start_at')
 
         expected.columns = pd.MultiIndex.from_tuples(

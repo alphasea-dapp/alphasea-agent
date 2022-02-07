@@ -7,8 +7,8 @@ from ..helpers import (
     get_future_execution_start_at_timestamp,
     proceed_time,
     get_prediction_time_shift,
-    get_purchase_time_shift,
-    get_shipping_time_shift,
+    get_sending_time_shift,
+    get_preparation_time_shift,
     get_publication_time_shift,
     get_tournament_id,
     create_store,
@@ -51,7 +51,6 @@ class TestExecutorGetTargetPositions(BaseHardhatTestCase):
             model_selector=AllModelSelector(),
             market_data_store=market_data_store,
             symbol_white_list=['BTC'],
-            budget_rate=0.1,
             redis_client=create_redis_client(),
         )
         executor._initialize()
@@ -68,13 +67,11 @@ class TestExecutorGetTargetPositions(BaseHardhatTestCase):
             model_id=model_id,
             execution_start_at=execution_start_at,
             content=content,
-            price=1,
         )])
 
         buffer_time = 4 * 60
-        executor_time = execution_start_at + get_purchase_time_shift() + buffer_time
+        executor_time = execution_start_at + get_preparation_time_shift() + buffer_time
         proceed_time(w3, executor_time)
-        executor._step()
 
     def test_start_entry(self):
         df = self.executor.get_target_positions(

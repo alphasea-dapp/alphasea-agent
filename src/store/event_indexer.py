@@ -19,15 +19,6 @@ class EventIndexer:
         self._rate_limiter = rate_limiter
         self._redis_client = redis_client
 
-        self._event_names = [
-            'TournamentCreated',
-            'ModelCreated',
-            'PredictionCreated',
-            'PredictionPublished',
-            'PurchaseCreated',
-            'PurchaseShipped',
-        ]
-
         self._last_block_number = 0 if start_block_number is None else start_block_number - 1
         self._get_logs_limit = 1000 if get_logs_limit is None else get_logs_limit
 
@@ -43,14 +34,47 @@ class EventIndexer:
             'execution_time',
             'prediction_time',
             'publication_time',
-            'purchase_time',
-            'shipping_time'
+            'sending_time',
         ])
-        self._models = pd.DataFrame(columns=['model_id', 'tournament_id', 'owner'])
+
+        self._public_keys = pd.DataFrame(
+            columns=['owner', 'public_key']
+        )
+
+        self._models = pd.DataFrame(
+            columns=['model_id', 'tournament_id', 'owner']
+        )
+
         self._predictions = pd.DataFrame(
-            columns=['model_id', 'execution_start_at', 'price', 'content_key', 'encrypted_content'])
-        self._purchases = pd.DataFrame(
-            columns=['model_id', 'execution_start_at', 'purchaser', 'encrypted_content_key', 'public_key'])
+            columns=[
+                'model_id', 'execution_start_at',
+                'encrypted_content'
+            ]
+        )
+
+        self._prediction_key_publications = pd.DataFrame(
+            columns=[
+                'owner', 'tournament_id',
+                'execution_start_at', 'content_key'
+            ]
+        )
+
+        self._prediction_key_sendings = pd.DataFrame(
+            columns=[
+                'owner', 'tournament_id',
+                'execution_start_at', 'receiver',
+                'encrypted_content_key'
+            ]
+        )
+
+    def fetch_public_keys(self, owner: str = None, without_fetch_events: bool=False):
+        if not without_fetch_events:
+            self._fetch_events()
+
+        return _filter_df(self._public_keys, [
+            ('owner', owner)
+        ])
+
 
     def fetch_tournaments(self, tournament_id: str = None):
         self._fetch_events()
@@ -80,17 +104,34 @@ class EventIndexer:
             ('execution_start_at', execution_start_at),
         ])
 
-    def fetch_purchases(self, model_id: str = None, execution_start_at: int = None,
-                        purchaser: str = None, public_key: bytes = None,
-                        without_fetch_events: bool = False):
+    def fetch_prediction_key_publications(
+            self, owner: str = None,
+            tournament_id: str = None,
+            execution_start_at: int = None,
+            without_fetch_events: bool = False):
         if not without_fetch_events:
             self._fetch_events()
 
-        return _filter_df(self._purchases, [
-            ('model_id', model_id),
+        return _filter_df(self._prediction_key_publications, [
+            ('owner', owner),
+            ('tournament_id', tournament_id),
             ('execution_start_at', execution_start_at),
-            ('purchaser', purchaser),
-            ('public_key', public_key),
+        ])
+
+    def fetch_prediction_key_sendings(
+            self, owner: str = None,
+            tournament_id: str = None,
+            execution_start_at: int = None,
+            receiver: str = None,
+            without_fetch_events: bool = False):
+        if not without_fetch_events:
+            self._fetch_events()
+
+        return _filter_df(self._prediction_key_sendings, [
+            ('owner', owner),
+            ('tournament_id', tournament_id),
+            ('execution_start_at', execution_start_at),
+            ('receiver', receiver),
         ])
 
     def _rate_limit(self):
@@ -123,18 +164,21 @@ class EventIndexer:
         cache_enabled = to_block - from_block + 1 == self._get_logs_limit
         if not cache_enabled:
             self._rate_limit()
-            self._logger.debug('EventIndexer._cached_fetch_events from_block {} to_block {} cache disabled'.format(from_block, to_block))
+            self._logger.debug(
+                'EventIndexer._cached_fetch_events from_block {} to_block {} cache disabled'.format(from_block,
+                                                                                                    to_block))
             return get_events(
                 self._contract,
                 from_block=from_block,
                 to_block=to_block
             )
 
-        key = 'event_indexer:{}'.format(from_block, to_block)
+        key = 'event_indexer:{}:{}'.format(from_block, to_block)
         value = self._redis_client.get(key)
         if value is None:
             self._rate_limit()
-            self._logger.debug('EventIndexer._cached_fetch_events from_block {} to_block {} cache miss'.format(from_block, to_block))
+            self._logger.debug(
+                'EventIndexer._cached_fetch_events from_block {} to_block {} cache miss'.format(from_block, to_block))
             value = get_events(
                 self._contract,
                 from_block=from_block,
@@ -142,7 +186,8 @@ class EventIndexer:
             )
             self._redis_client.set(key, pickle.dumps(value))
         else:
-            self._logger.debug('EventIndexer._cached_fetch_events from_block {} to_block {} cache hit'.format(from_block, to_block))
+            self._logger.debug(
+                'EventIndexer._cached_fetch_events from_block {} to_block {} cache hit'.format(from_block, to_block))
             value = pickle.loads(value)
 
         return value
@@ -151,35 +196,51 @@ class EventIndexer:
         event_name = event['event']
         args = convert_keys_to_snake_case(event['args'])
 
-        if event_name == 'TournamentCreated':
-            self._tournaments = self._tournaments.append(
-                args,
-                ignore_index=True,
-            )
+        if event_name == 'PublicKeyChanged':
+            self._public_keys = upsert(
+                self._public_keys, args, ['owner'])
+        elif event_name == 'TournamentCreated':
+            self._tournaments = insert_if_not_exist(
+                self._tournaments, args, ['tournament_id'])
         elif event_name == 'ModelCreated':
-            self._models = self._models.append(
-                args,
-                ignore_index=True,
-            )
+            self._models = insert_if_not_exist(
+                self._models, args, ['model_id'])
         elif event_name == 'PredictionCreated':
-            self._predictions = self._predictions.append(
-                args,
-                ignore_index=True,
+            self._predictions = insert_if_not_exist(
+                self._predictions, args, ['model_id', 'execution_start_at'])
+        elif event_name == 'PredictionKeyPublished':
+
+
+            self._prediction_key_publications = insert_if_not_exist(
+                self._prediction_key_publications, args,
+                ['owner', 'tournament_id', 'execution_start_at']
             )
-        elif event_name == 'PredictionPublished':
-            idx = self._predictions['model_id'] == args['model_id']
-            idx &= self._predictions['execution_start_at'] == args['execution_start_at']
-            self._predictions.loc[idx, 'content_key'] = args['content_key']
-        elif event_name == 'PurchaseCreated':
-            self._purchases = self._purchases.append(
-                args,
-                ignore_index=True,
+        elif event_name == 'PredictionKeySent':
+            self._prediction_key_sendings = insert_if_not_exist(
+                self._prediction_key_sendings, args,
+                ['owner', 'tournament_id', 'execution_start_at', 'receiver']
             )
-        elif event_name == 'PurchaseShipped':
-            idx = self._purchases['model_id'] == args['model_id']
-            idx &= self._purchases['execution_start_at'] == args['execution_start_at']
-            idx &= self._purchases['purchaser'] == args['purchaser']
-            self._purchases.loc[idx, 'encrypted_content_key'] = args['encrypted_content_key']
+
+
+def upsert(df, row, indicies):
+    idx = df[indicies[0]] == row[indicies[0]]
+    for col in indicies[1:]:
+        idx &= df[df[col] == row[col]]
+    if df.loc[idx].shape[0] == 0:
+        df = df.append(row, ignore_index=True)
+    else:
+        for col in row:
+            df.loc[idx, col] = row[col]
+    return df
+
+
+def insert_if_not_exist(df, row, indicies):
+    idx = df[indicies[0]] == row[indicies[0]]
+    for col in indicies[1:]:
+        idx &= df[col] == row[col]
+    if df.loc[idx].shape[0] == 0:
+        df = df.append(row, ignore_index=True)
+    return df
 
 
 def _filter_df(df, conditions):
@@ -187,6 +248,7 @@ def _filter_df(df, conditions):
         if value is not None:
             df = df.loc[df[name] == value]
     return df.copy()
+
 
 def _floor_int(a, b, remainder):
     return ((a - remainder) // b) * b + remainder
