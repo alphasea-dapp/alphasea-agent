@@ -28,8 +28,7 @@ def _pivot_df(df, execution_start_ats, values):
         columns=['model_id', 'symbol'],
         values=values
     )
-    df = df.fillna(0)
-    df = df.reindex(execution_start_ats, fill_value=0)
+    df = df.reindex(execution_start_ats)
     df = df.sort_index(axis=1)
     return df
 
