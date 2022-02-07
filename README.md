@@ -18,8 +18,7 @@ HTTP APIインターフェース (デフォルトポート: 8070)
 エージェントの動き
 
 - 提出された予測をスマートコントラクトに投稿
-- 購入された予測をスマートコントラクト経由で購入者に届ける
-- モデル選択アルゴリズムで購入する予測を選び購入する
+- メタモデルが共有すると判断した予測をスマートコントラクト経由で共有
 - メタモデルのポジションを計算する
 
 ## 準備
@@ -64,26 +63,11 @@ docker run --rm -v "$(pwd)/data/keystore:/root/.ethereum/keystore:ro" ethereum/c
 
 ### ウォレットにMATICを入れる
 
-alphasea-agentは動作にMATICが必要です(gas代や予測購入費用)。
+alphasea-agentは動作にMATICが必要です(gas代用)。
 MATICはPolygonの基本の通貨で、
 ethereumのETHに相当します。
 取引所からの送金などで入れると良いと思います。
 送金先アドレスは前項の手順で確認できます。
-
-### .envファイルを作成
-
-Executor(メタモデルに基づいた自動トレード)を行う場合は、以下の手順で.envファイルを作成する必要があります。
-Predictor(予測投稿)だけ行う場合はこの設定は不要です。
-
-以下の内容の.envファイルをalphasea-agentディレクトリ直下に作成します。
-
-```text
-
-```
-
-\* .envはdocker-composeの仕組みです。詳しくは [docker.jp environment variables](https://docs.docker.jp/compose/environment-variables.html#env) 参照
-
-\* ExecutorとPredictorについて詳しくは [AlphaSeaの仕組み](https://alphasea.io/how-it-works/) 参照。
 
 ### agentを起動
 
@@ -103,7 +87,7 @@ curl 'http://localhost:8070/target_positions.csv?timestamp=1640962800&tournament
 
 以下のような出力が表示されれば成功です。
 これは指定したtimestamp時点でのメタモデルポジションを表します。
-現時点では、メタモデルが予測を購入していないので、何も表示されません。
+この時点では、予測が共有されていないので、中身は空です。
 
 ```bash
 symbol,position
